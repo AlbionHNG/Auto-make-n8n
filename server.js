@@ -1,6 +1,5 @@
 const express = require('express');
 const app = express();
-const multer = require('multer');
 const fs = require('fs')
 const {OpenAI} = require('openai');
 const dotenv = require('dotenv');
@@ -13,7 +12,6 @@ mongoose.connect('mongodb://localhost:27017/chatbot')
     .catch(err => console.error('MongoDB lỗi rồi, mất trí nhớ rồi!', err));
 
 dotenv.config();
-const upload = multer({ dest: 'uploads/' });
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
