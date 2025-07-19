@@ -1,5 +1,7 @@
+//Khởi tạo mongo
 const mongoose = require('mongoose');
 
+//Tạo cái khung Schema
 const messageSchema = new mongoose.Schema({
     role: String,
     content: mongoose.Schema.Types.Mixed
