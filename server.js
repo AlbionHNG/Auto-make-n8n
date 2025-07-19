@@ -9,9 +9,12 @@ const ChatHistory = require('./chatHistory');
 
 mongoose.connect('mongodb://localhost:27017/chatbot') 
     .then(() => console.log('AI đã có não để nhớ'))
-    .catch(err => console.error('MongoDB lỗi rồi, mất trí nhớ rồi!', err));
+    .catch(err => console.error('MongoDB lỗi rồi!', err));
 
 dotenv.config();
+
+const upload = multer({ dest: 'uploads/' });
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -21,12 +24,13 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname,'index.html'));
 });
+
 app.post('/chat', upload.single('image'), async (req, res) => {
     try {
         const userPrompt = req.body.prompt || '';
         const sessionId = req.ip || 'default-session';
-
- let history = await ChatHistory.findOne({ sessionId });
+//Tạo chat
+let history = await ChatHistory.findOne({ sessionId });
 if (!history) {
     history = new ChatHistory({ 
         sessionId, 
@@ -72,7 +76,7 @@ const chatCompletion = await openai.chat.completions.create({
 const aiMessage = chatCompletion.choices[0].message;
 history.messages.push(aiMessage);
 
-// Lưu lại vào MongoDB
+// Lưu lại vào Mongo
 await history.save();
 
 res.json({ reply: aiMessage.content });
