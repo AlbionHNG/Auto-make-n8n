@@ -1,32 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI bán 10 cân hẹ</title>
-    <script type="module">
-      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
-      window.mermaid = mermaid;
-      mermaid.initialize({ startOnload: false});
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <body>
-  <div class="chat-container">
-    <div class="chat-header">
-      <h2>AI Chatbot, để bán hẹ</h2>
-    </div>
-    <div id="chatBox" class="chat-box"></div>
-    <form id="chatForm" class="chat-form">
-      <textarea name="prompt" id="prompt" placeholder="Nhập tin nhắn..." rows="2" required></textarea>
-      <label class="file-label">
-        <input type="file" name="image" id="imageInput" accept="image/*" style="display:none">
-        <span>
-          <i class="fa-solid fa-folder-open"></i>
-        </span>
-      </label>
-      <button type="submit">Gửi</button>
-    </form>
-  </div>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI bán 10 cân hẹ</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <style>
     body {
@@ -128,109 +107,29 @@
       user-select: none;
     }
   </style>
-  <script>
-  
-    const form = document.getElementById('chatForm');
-    const chatBox = document.getElementById('chatBox');
-    const promptInput = document.getElementById('prompt');
-    const imageInput = document.getElementById('imageInput');
-
-  // Hiển thị ảnh preview khi chọn file
-  imageInput.addEventListener('change', function() {
-  // Xóa ảnh preview cũ nếu có
-  let oldPreview = document.getElementById('image-preview');
-  if (oldPreview) oldPreview.remove();
-
-  if (imageInput.files && imageInput.files[0]) {
-    const img = document.createElement('img');
-    img.id = 'image-preview';
-    img.src = URL.createObjectURL(imageInput.files[0]);
-    img.style.maxWidth = '120px';
-    img.style.marginLeft = '8px';
-    img.style.borderRadius = '6px';
-    img.style.border = '1px solid #ddd';
-    // Thêm ảnh preview vào form
-    form.insertBefore(img, form.querySelector('button'));
-  }
-});
-  // Xóa ảnh preview khi gửi
-  form.addEventListener('submit', function() {
-    let oldPreview = document.getElementById('image-preview');
-    if (oldPreview) oldPreview.remove()});
-
-    // Hiển thị tin nhắn lên khung chat
-    function appendMessage(role, text, imageUrl) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'chat-message ' + (role === 'user' ? 'user' : 'ai');
-      const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
-      if(mermaidMatch) {
-        const mermaidCode = mermaidMatch[1];
-        msgDiv.innerHTML = `<div class="mermaid">${mermaidCode}</div>`;
-        setTimeout(() => {
-          if (window.mermaid) window.mermaid.run();
-        }, 0);
-
-      } else if (text) {
-        msgDiv.innerHTML = text.replace(/\n/g, '<br>');
-      }
-      
-      if (imageUrl) {
-        const img = document.createElement('img');
-        img.src = imageUrl;
-        msgDiv.appendChild(img);
-      }
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // Xử lý gửi form
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const prompt = promptInput.value.trim();
-      if (!prompt) return;
-
-      // Hiển thị tin nhắn user
-      let imageUrl = null;
-      if (imageInput.files && imageInput.files[0]) {
-        imageUrl = URL.createObjectURL(imageInput.files[0]);
-      }
-      appendMessage('user', prompt, imageUrl);
-
-      const formData = new FormData(form);
-      promptInput.value = '';
-      imageInput.value = '';
-      appendMessage('ai', 'Đang trả lời...');
-
-      try {
-        const response = await fetch('/chat', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await response.json();
-
-        // Xóa "Đang trả lời..."
-        chatBox.removeChild(chatBox.lastChild);
-
-        if (data.reply) {
-          appendMessage('ai', data.reply);
-        } else {
-          appendMessage('ai', 'AI không phản hồi.');
-        }
-      } catch (err) {
-        chatBox.removeChild(chatBox.lastChild);
-        appendMessage('ai', '⚠️ Lỗi khi gửi yêu cầu.');
-        console.error(err);
-      }
-    });
-
-    // Nhấn Enter để gửi (Shift+Enter để xuống dòng)
-    promptInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        form.dispatchEvent(new Event('submit'));
-      }
-    });
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h2>AI Chatbot, để bán hẹ</h2>
+    </div>
+    <div id="chatBox" class="chat-box"></div>
+    <form id="chatForm" class="chat-form">
+      <textarea name="prompt" id="prompt" placeholder="Nhập tin nhắn..." rows="2" required></textarea>
+      <label class="file-label">
+        <input type="file" name="image" id="imageInput" accept="image/*" style="display:none">
+        <span><i class="fa-solid fa-folder-open"></i></span>
+      </label>
+      <button type="submit">Gửi</button>
+    </form>
+  </div>
+    
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    window.mermaid = mermaid;
+    mermaid.initialize({ startOnload: false });
   </script>
+
+  <script src="./chat.js" defer></script>
 </body>
 </html>
