@@ -21,10 +21,11 @@ const openai = new OpenAI({
 
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname,'index.html'));
-});
+app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname,'public' ,'index.html'));
+});
 app.post('/chat', upload.single('image'), async (req, res) => {
     try {
         const userPrompt = req.body.prompt || '';
