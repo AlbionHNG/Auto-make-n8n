@@ -1,20 +1,22 @@
 const express = require('express');
 const app = express();
+app.use(express.json());
+const multer = require('multer');
 const fs = require('fs')
 const {OpenAI} = require('openai');
 const dotenv = require('dotenv');
 const path = require('path');
 const mongoose = require('mongoose');
 const ChatHistory = require('./chatHistory');
+const proxyRoutes = require('./proxy.js');
+app.use(proxyRoutes);
 
 mongoose.connect('mongodb://localhost:27017/chatbot') 
     .then(() => console.log('AI đã có não để nhớ'))
-    .catch(err => console.error('MongoDB lỗi rồi!', err));
+    .catch(err => console.error('MongoDB lỗi rồi, mất trí nhớ rồi!', err));
 
 dotenv.config();
-
 const upload = multer({ dest: 'uploads/' });
-
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -26,12 +28,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname,'public' ,'index.html'));
 });
+
 app.post('/chat', upload.single('image'), async (req, res) => {
     try {
         const userPrompt = req.body.prompt || '';
         const sessionId = req.ip || 'default-session';
-//Tạo chat
-let history = await ChatHistory.findOne({ sessionId });
+
+ let history = await ChatHistory.findOne({ sessionId });
 if (!history) {
     history = new ChatHistory({ 
         sessionId, 
@@ -56,7 +59,9 @@ if (req.file) {
         ]
     };
     fs.unlinkSync(req.file.path);
-} else {
+} 
+
+else {
     userMessage = {
         role: 'user',
         content: userPrompt
@@ -77,7 +82,7 @@ const chatCompletion = await openai.chat.completions.create({
 const aiMessage = chatCompletion.choices[0].message;
 history.messages.push(aiMessage);
 
-// Lưu lại vào Mongo
+// Lưu lại vào MongoDB
 await history.save();
 
 res.json({ reply: aiMessage.content });
