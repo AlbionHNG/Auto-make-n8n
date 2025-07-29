@@ -112,6 +112,7 @@
   <div class="chat-container">
     <div class="chat-header">
       <h2>AI Chatbot, để bán hẹ</h2>
+      <button type="button" id="goto" onclick="location.href='./n8n.html'">đi tới trang n8n.html</button>
     </div>
     <div id="chatBox" class="chat-box"></div>
     <form id="chatForm" class="chat-form">
@@ -123,13 +124,15 @@
       <button type="submit">Gửi</button>
     </form>
   </div>
-    
+
+  <!-- Import mermaid -->
   <script type="module">
     import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
     window.mermaid = mermaid;
     mermaid.initialize({ startOnload: false });
   </script>
 
+  <!-- Import logic chat -->
   <script src="./chat.js" defer></script>
 </body>
 </html>
