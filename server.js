@@ -102,10 +102,7 @@ const pineconeResponse = await namespace.query({
 console.log('Vector length:', vector.length);
 console.log('Pinecone matches:', pineconeResponse.matches?.length);
 console.log('Sample data:', pineconeResponse.matches?.[0]?.metadata);
-
-// Xử lý Pinecone - chỉ push khi có dữ liệu
-// Khai báo MGE bên ngoài
-// Khai báo MGE bên ngoài
+        
 let MGE = null;
 
 // Xử lý Pinecone
@@ -159,3 +156,4 @@ res.json({ reply: aiMessage.content });
 app.listen(3000, () => {
     console.log('Server đang chạy vèo vèo ở cổng http://localhost:3000');
 });
+
