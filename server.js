@@ -1,26 +1,20 @@
 const express = require('express');
 const app = express();
-const multer = require('multer');
 const fs = require('fs')
 const {OpenAI} = require('openai');
 const dotenv = require('dotenv');
 const path = require('path');
-const {Pinecone} = require('@pinecone-database/pinecone')
 const mongoose = require('mongoose');
 const ChatHistory = require('./chatHistory');
-const proxyRoutes = require('./proxy.js');
-
-app.use(proxyRoutes);
-
-app.use(express.json());
 
 mongoose.connect('mongodb://localhost:27017/chatbot') 
     .then(() => console.log('AI đã có não để nhớ'))
-    .catch(err => console.error('MongoDB lỗi rồi, mất trí nhớ rồi!', err));
+    .catch(err => console.error('MongoDB lỗi rồi!', err));
 
 dotenv.config();
 
 const upload = multer({ dest: 'uploads/' });
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -32,12 +26,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname,'public' ,'index.html'));
 });
-
 app.post('/chat', upload.single('image'), async (req, res) => {
     try {
         const userPrompt = req.body.prompt || '';
         const sessionId = req.ip || 'default-session';
-
+//Tạo chat
 let history = await ChatHistory.findOne({ sessionId });
 if (!history) {
     history = new ChatHistory({ 
@@ -63,9 +56,7 @@ if (req.file) {
         ]
     };
     fs.unlinkSync(req.file.path);
-} 
-
-else {
+} else {
     userMessage = {
         role: 'user',
         content: userPrompt
@@ -74,67 +65,6 @@ else {
 
 // Thêm user message vào history
 history.messages.push(userMessage);
-
-//Nhúng văn bản
-const embeddingResponse = await openai.embeddings.create({
-  model: "text-embedding-3-small",
-  input: userPrompt
-});
-
-const vector = embeddingResponse.data[0].embedding;
-
-//Kết nối pinecone
-const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
-const INDEX_NAME= process.env.INDEX_NAME;
-const INDEX_HOST= process.env.INDEX_HOST;
-const PRE_namespace= process.env.namespace;
-const namespace = pc.index(INDEX_NAME, INDEX_HOST).namespace(PRE_namespace);
-
-const pineconeResponse = await namespace.query({
-  vector: vector,
-  topK: 20,
-  includeMetadata: true,
-  includeValues: false
-});
-
-//log để kiểm tra kết nối
-console.log('Vector length:', vector.length);
-console.log('Pinecone matches:', pineconeResponse.matches?.length);
-console.log('Sample data:', pineconeResponse.matches?.[0]?.metadata);
-
-// Xử lý Pinecone - chỉ push khi có dữ liệu
-// Khai báo MGE bên ngoài
-// Khai báo MGE bên ngoài
-let MGE = null;
-
-// Xử lý Pinecone
-if(pineconeResponse.matches?.length > 0){
-    const PineconeInfo = pineconeResponse.matches
-        .map(match => match.metadata.text|| '')
-        .filter(Boolean)
-        .join('\n\n');
-    
-    // Debug: In ra PineconeInfo để kiểm tra
-    console.log('PineconeInfo content:', PineconeInfo.substring(0, 200));
-    
-    // Chỉ gán khi có dữ liệu dạng string
-    if (PineconeInfo.trim()) {
-        MGE = {
-            role: 'system',
-            content: `Tài liệu tham khảo liên quan:\n${PineconeInfo}`
-        };
-        console.log('✅ Đã tạo MGE với content length:', MGE.content.length);
-    }
-}
-
-if (MGE) {
-    history.messages.push(MGE);
-    console.log('✅ Đã push MGE vào history');
-} else {
-    console.log('❌ Không push MGE - không có dữ liệu');
-}
-
 
 // Gửi toàn bộ history.messages lên OpenAI
 const chatCompletion = await openai.chat.completions.create({
@@ -147,8 +77,9 @@ const chatCompletion = await openai.chat.completions.create({
 const aiMessage = chatCompletion.choices[0].message;
 history.messages.push(aiMessage);
 
-// Lưu lại vào MongoDB
+// Lưu lại vào Mongo
 await history.save();
+
 res.json({ reply: aiMessage.content });
     } catch (err) {
         console.error(err);
