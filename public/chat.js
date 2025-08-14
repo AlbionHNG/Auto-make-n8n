@@ -1,9 +1,37 @@
+// Hiển thị ảnh preview khi chọn file
 const form = document.getElementById('chatForm');
 const chatBox = document.getElementById('chatBox');
 const promptInput = document.getElementById('prompt');
 const imageInput = document.getElementById('imageInput');
+// Lấy hoặc tạo sessionId
+let sessionId = localStorage.getItem('chatSessionId');
+if (!sessionId) {
+    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('chatSessionId', sessionId);
+}
 
-// Hiển thị ảnh preview khi chọn file
+
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch(`/history?sessionId=${sessionId}`);
+    const data = await res.json();
+    if (data.messages && Array.isArray(data.messages)) {
+      for (const msg of data.messages) {
+        if (typeof msg.content === 'string') {
+          appendMessage(msg.role, msg.content);
+        } else if (Array.isArray(msg.content)) {
+          // Nếu là tin nhắn có ảnh
+          const textPart = msg.content.find(p => p.type === 'text')?.text || '';
+          const imgPart = msg.content.find(p => p.type === 'image_url')?.image_url?.url || null;
+          appendMessage(msg.role, textPart, imgPart);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Không thể load lịch sử chat:', err);
+  }
+});
+
 imageInput.addEventListener('change', function () {
   let oldPreview = document.getElementById('image-preview');
   if (oldPreview) oldPreview.remove();
@@ -83,7 +111,7 @@ function appendMessage(role, text, imageUrl) {
 
   // Kích hoạt mermaid sau khi render
   setTimeout(() => {
-    if (window.mermaid) window.mermaid.run();
+    mermaid.run(); // đúng chuẩn cho bản UMD
   }, 0);
 }
 
@@ -101,9 +129,10 @@ form.addEventListener('submit', async (event) => {
   appendMessage('user', prompt, imageUrl);
 
   const formData = new FormData(form);
-  promptInput.value = '';
-  imageInput.value = '';
-  appendMessage('ai', 'Đang trả lời...');
+    formData.append('sessionId', sessionId);
+    promptInput.value = '';
+    imageInput.value = '';
+    appendMessage('ai', 'Đang trả lời...');
 
   try {
     const response = await fetch('/chat', {
