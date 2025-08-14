@@ -8,7 +8,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script>hljs.highlightAll();</script>
-
+  <!-- Import mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: false });
+</script>
+</script>
   <style>
     body {
       background: #f4f4f4;
@@ -45,11 +50,10 @@
       padding: 16px;
       overflow-y: auto;
       background: #f9f9f9;
-      min-height: 300px;
-      max-height: 60vh;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      max-height: none;
     }
 
     .chat-message {
@@ -86,7 +90,11 @@
       padding: 8px;
       border-radius: 6px;
       margin-top: 8px;
+      overflow-x: auto;
+      max-width: 100%;
+      white-space: pre-wrap;
     }
+
 
     .chat-form {
       display: flex;
@@ -148,14 +156,6 @@
     </form>
   </div>
 
-  <!-- Import mermaid -->
-  <script type="module">
-    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
-    window.mermaid = mermaid;
-    mermaid.initialize({ startOnload: false });
-  </script>
-
-  <!-- Import logic chat -->
   <script src="./chat.js" defer></script>
 </body>
 
