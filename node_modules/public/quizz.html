@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản lý bài kiểm tra</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    .hidden { display: none; }
+    .question { margin-bottom: 15px; }
+    .quiz-box { border: 1px solid #ccc; padding: 15px; border-radius: 6px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Tạo bài kiểm tra</h2>
+  <div id="createTest">
+    <label>Tên bài kiểm tra: </label>
+    <input type="text" id="testName"><br><br>
+    <label>Số câu hỏi: </label>
+    <input type="number" id="numQuestions" min="1"><br><br>
+    <button onclick="startCreating()">Bắt đầu nhập câu hỏi</button>
+  </div>
+
+  <div id="questionForm" class="hidden">
+    <h3 id="qTitle"></h3>
+    <label>Nội dung câu hỏi:</label><br>
+    <input type="text" id="qText"><br><br>
+    <label>Đáp án A:</label><br><input type="text" id="optA"><br><br>
+    <label>Đáp án B:</label><br><input type="text" id="optB"><br><br>
+    <label>Đáp án C:</label><br><input type="text" id="optC"><br><br>
+    <label>Đáp án D:</label><br><input type="text" id="optD"><br><br>
+    <label>Đáp án đúng:</label>
+    <select id="correctOpt">
+      <option value="0">A</option>
+      <option value="1">B</option>
+      <option value="2">C</option>
+      <option value="3">D</option>
+    </select><br><br>
+    <button onclick="saveQuestion()">Lưu câu hỏi</button>
+  </div>
+
+  <div id="quizArea" class="hidden">
+    <h2 id="quizTitle"></h2>
+    <div id="quizBox" class="quiz-box"></div>
+    <button onclick="submitQuiz()">Nộp bài</button>
+  </div>
+
+  <script src="quizz.js" defer></script>
+</body>
+</html>
