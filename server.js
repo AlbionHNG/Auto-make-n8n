@@ -9,16 +9,31 @@ const { Pinecone } = require('@pinecone-database/pinecone')
 const mongoose = require('mongoose');
 const ChatHistory = require('./chatHistory');
 const proxyRoutes = require('./proxy.js');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+const xlsx = require('xlsx');
+const cors = require('cors');
 
-app.use(express.json({limit: '10mb'}));
+
+// CORS
+app.use(cors({
+    origin: 'http://localhost:3000', // Cho phép origin từ ứng dụng frontend
+}));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'main.html'));
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+
+app.use(express.json({ limit: '10mb' }));
 app.use('/', proxyRoutes);
-
 app.use(express.urlencoded({ extended: true }));
-
 app.use(express.json());
 
 mongoose.connect('mongodb://localhost:27017/chatbot')
-    .then(() => console.log('AI đã có não để nhớ'))
+    .then(() => console.log('AI Đã có não để nhớ'))
     .catch(err => console.error('MongoDB lỗi rồi, mất trí nhớ rồi!', err));
 
 dotenv.config();
@@ -29,17 +44,171 @@ const openai = new OpenAI({
 });
 
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Function để extract JSON từ text
+function extractJsonFromText(text) {
+    const jsonBlockRegex = /```json\s*([\s\S]*?)```/gi;//Tìm bọc trong markdown
+    const jsonBlocks = [];
+    let match;
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+    while ((match = jsonBlockRegex.exec(text)) !== null) {
+        try {
+            const jsonData = JSON.parse(match[1]);
+            if (jsonData.nodes && Array.isArray(jsonData.nodes)) {
+                jsonBlocks.push({
+                    raw: match[1],
+                    parsed: jsonData,
+                    startIndex: match.index,
+                    endIndex: match.index + match[0].length
+                });
+            }
+        } catch (e) {
+            // Không phải JSON hợp lệ, bỏ qua
+        }
+    }
 
+    if (jsonBlocks.length === 0) {
+        const jsonObjectRegex = /\{[\s\S]*?"nodes"\s*:\s*\[[\s\S]*?\]\s*[\s\S]*?\}/g;//tim ko bọc trong markdown
+        while ((match = jsonObjectRegex.exec(text)) !== null) {
+            try {
+                const jsonData = JSON.parse(match[0]);
+                if (jsonData.nodes && Array.isArray(jsonData.nodes)) {
+                    jsonBlocks.push({
+                        raw: match[0],
+                        parsed: jsonData,
+                        startIndex: match.index,
+                        endIndex: match.index + match[0].length
+                    });
+                }
+            } catch (e) {
+                // Không phải JSON hợp lệ, bỏ qua
+            }
+        }
+    }
 
-//Lấy lịch sử chat
+    return jsonBlocks;
+}
+// Clean node để nó ko hiện n8n nodes-base hay @n8n j đó nữa
+function cleanNodeType(nodeType) {
+    if (!nodeType) return 'Unknown';
+
+    let cleanType = nodeType
+        .replace(/^n8n-nodes-base\./, '')
+        .replace(/^@n8n\//, '')
+        .replace(/^n8n-/, '');
+
+    cleanType = cleanType
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    // Map một số tên node phổ biến sang tên thân thiện hơn
+    const typeMap = {
+        'Http Request': 'HTTP Request',
+        'Http Webhook': 'HTTP Webhook',
+        'If': 'IF',
+        'Set': 'Set',
+        'Code': 'Code',
+        'Merge': 'Merge',
+        'Wait': 'Wait',
+        'Schedule Trigger': 'Schedule',
+        'Manual Trigger': 'Manual',
+        'Webhook': 'Webhook'
+    };
+
+    return typeMap[cleanType] || cleanType;
+}
+// Thêm thông tin node vào label trong Mermaid
+function enhanceNodeLabels(mermaidCode, workflowData) {
+    if (!workflowData || !workflowData.nodes) return mermaidCode;
+
+    const nodeMap = {};
+    workflowData.nodes.forEach(node => {
+        nodeMap[node.id] = {
+            name: node.name || '',
+            type: cleanNodeType(node.type),
+            operation: node.parameters?.operation || '',
+            event: node.parameters?.event || '',
+        };
+    });
+
+    const enhancedCode = mermaidCode.replace(/([A-Za-z0-9_-]+)(?:\["([^"]*)"\])?/g, (match, nodeId, currentLabel) => {
+        const nodeInfo = nodeMap[nodeId];
+        if (!nodeInfo) return match;
+
+        if (/-->|==>|<-|->/.test(match)) return match;
+
+        let suffix = '';
+        if (nodeInfo.operation && nodeInfo.event) {
+            suffix = `${nodeInfo.operation}/${nodeInfo.event}`;
+        } else if (nodeInfo.operation || nodeInfo.event) {
+            suffix = nodeInfo.operation || nodeInfo.event;
+        }
+
+        let label = '';
+        if (nodeInfo.name !== nodeInfo.type && nodeInfo.name !== nodeId) {
+            label = `${nodeInfo.name}  (${nodeInfo.type})\\n${suffix}`;
+        } else {
+            label = `${nodeInfo.type}\\n${suffix}`;
+        }
+
+        return `${nodeId}["${label}"]`;
+    });
+
+    return enhancedCode;
+}
+
+// Function để convert JSON thành Mermaid (chuyển tại server khi đăng)
+async function convertJsonToMermaid(workflowData) {
+    const payload = {
+        workflow_data: workflowData,
+        params: {
+            direction: 'LR',
+            subgraph_direction: 'BT',
+            show_credentials: false,
+            show_key_parameters: true,
+            subgraph_display_mode: 'subgraph'
+        }
+    };
+
+    try {
+        const res = await fetch('https://api-n8nmermaid.janwillemaltink.com/v2/mermaid/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error('API error: ' + JSON.stringify(data));
+        }
+
+        let code = data.mermaid_code || (data.diagrams && data.diagrams.main);
+        if (!code) {
+            throw new Error('No Mermaid code returned.');
+        }
+
+        // Clean up code
+        code = code
+            .replace(/([^\s@]+)@\{[^}]*label:\s*"([^"]+)"[^}]*\}/g, '$1["$2"]')
+            .replace(/([^\s@]+)@\{[^}]*\}/g, '$1')
+            .replace(/%%.*$/gm, '')
+            .trim();
+        code = enhanceNodeLabels(code, workflowData);// Thêm thông tin node vào label trong Mermaid
+        return code;
+    } catch (error) {
+        throw error;
+    }
+}
+
+//Lấy lịch sử chata
 app.get('/history', async (req, res) => {
     try {
-        const sessionId = req.ip || 'default-session';;
+        const sessionId = req.ip || 'default-session';
         console.log('📖 Loading history for sessionId:', sessionId);
 
         if (!sessionId) return res.status(400).json({ error: 'Thiếu sessionId' });
@@ -50,12 +219,16 @@ app.get('/history', async (req, res) => {
             return res.json({ messages: [] });
         }
 
-        // Chỉ trả về tin nhắn user và assistant, loại bỏ system messages
-        const historyMessages = history.messages.filter(msg =>
-            msg.role === 'user' || msg.role === 'assistant'
-        );
+        //Trả về tin nhắn user và assistant
+        const historyMessages = history.messages
+            .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+            .map(msg => ({
+                role: msg.role,
+                content: msg.content,
+                metadata: msg.metadata || {} // Trả về metadata để client render lại
+            }));
 
-        console.log('📖 Trả về', historyMessages.length, 'tin nhắn');
+        console.log('📖 Trả về', historyMessages.length, 'tin nhắn với metadata');
         res.json({ messages: historyMessages });
     } catch (err) {
         console.error('Lỗi khi lấy lịch sử:', err);
@@ -63,27 +236,18 @@ app.get('/history', async (req, res) => {
     }
 });
 
-
-//Tạo kiến thức
+// Load guild docs
 async function loadGuildDocs() {
     const baseDir = path.join(__dirname, 'n8n_guilds');
-
-    // txt
-    const tipsTxt = fs.readFileSync(path.join(baseDir, 'n8n_Tips_and_Tricks.txt'), 'utf8');
-    const HowtoTxt= fs.readFileSync(path.join(baseDir, 'HowtoMakeAnN8NFile.txt'), 'utf8');
-    const Ruling= fs.readFileSync(path.join(baseDir, 'Ruling.txt'), 'utf-8');
-
-    // Gộp thành 1 string
-    return `Đây là luật:\n${Ruling},luôn phải dùng đúng luật.\nĐây là một số node mẫu:\n${HowtoTxt}\nĐây là một số mẹo:\n${tipsTxt}`;
+    const Rule = fs.readFileSync(path.join(baseDir, 'Rule'), 'utf-8');
+    return `Đây là quy tác trả lời:\n${Rule}.`
 }
 
-//Nạp vào
 let guildKnowledge = '';
 loadGuildDocs().then(data => {
     guildKnowledge = data;
     console.log('✅ Loaded n8n guild docs');
 });
-
 
 app.post('/chat', upload.single('image'), async (req, res) => {
     try {
@@ -97,135 +261,240 @@ app.post('/chat', upload.single('image'), async (req, res) => {
                 messages: [
                     {
                         role: 'system',
-                        content: `Bạn là một trợ lý AI chuyên về n8n. Khi viết code json n8n hãy luôn để nó bên trong ````Json ````. Dưới đây là tài liệu tham khảo:\n${guildKnowledge}`//đạn lép
+                        content: `Bạn là một trợ lý AI chuyên về n8n. Khi viết code json n8n hãy luôn để nó bên trong \`\`\`json \`\`\`. Dưới đây là tài liệu tham khảo:\n${guildKnowledge}.`
+
                     }
                 ]
             });
         }
 
-        // Tạo user message
-        let userMessage;
+        // Tạo user message với metadata
+        let userMessage = {
+            role: 'user',
+            content: userPrompt,
+            metadata: {
+                detectedJsonBlocks: [],
+                hasFile: false,
+                fileInfo: null
+            }
+        };
+
         if (req.file) {
-            const base64Image = fs.readFileSync(req.file.path, { encoding: 'base64' });
-            userMessage = {
-                role: 'user',
-                content: [
+
+            if (req.file.mimetype.startsWith('image/')) {
+                const base64Image = fs.readFileSync(req.file.path, { encoding: 'base64' });
+                userMessage.content = [
                     { type: 'text', text: userPrompt },
                     { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
-                ]
-            };
-            fs.unlinkSync(req.file.path);
+                ];
+
+                // lưu ảnh vào metadata
+                userMessage.metadata.fileInfo = {
+                    type: 'image',
+                    name: req.file.originalname,
+                    mimetype: req.file.mimetype,
+                    size: req.file.size,
+                    base64Data: `data:${req.file.mimetype};base64,${base64Image}`,
+                };
+            } else {
+                let fileData = "";
+
+                switch (req.file.mimetype) {
+                    case 'application/pdf':
+                        const pdfBuffer = fs.readFileSync(req.file.path);
+                        const pdfData = await pdfParse(pdfBuffer);
+                        fileData = pdfData.text;
+                        break;
+
+                    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': // docx
+                        const docxBuffer = fs.readFileSync(req.file.path);
+                        const docxResult = await mammoth.extractRawText({ buffer: docxBuffer });
+                        fileData = docxResult.value;
+                        break;
+
+                    case 'text/plain':
+                        fileData = fs.readFileSync(req.file.path, 'utf8');//txt
+                        break;
+
+                    case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': // xlsx
+                        const workbook = xlsx.readFile(req.file.path);
+                        const sheetName = workbook.SheetNames[0];
+                        fileData = xlsx.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+                        break;
+
+                    default:
+                        fileData = "[⚠️ Loại file chưa hỗ trợ đọc trực tiếp]";
+                }
+
+                userMessage.content = [
+                    { type: 'text', text: userPrompt },
+                    {
+                        type: 'text',
+                        text: `📄 Tệp: ${req.file.originalname} (${req.file.size} bytes)\n\nNội dung:\n${fileData}`
+                    }
+                ];
+
+                // lưu thông tin file
+                userMessage.metadata.fileInfo = {
+                    type: 'document',
+                    name: req.file.originalname,
+                    mimetype: req.file.mimetype,
+                    size: req.file.size,
+                    content: fileData
+                };
+            }
+            userMessage.metadata.hasFile = true;
+            fs.unlinkSync(req.file.path); // Xóa file tạm sau khi đọc
         }
 
-        else {
-            userMessage = {
-                role: 'user',
-                content: userPrompt
-            };
-        }
 
         // Thêm user message vào history
         history.messages.push(userMessage);
 
-        // let PineconeTerror = userMessage = [{
-        //         role: 'system',
-        //         content: `Bạn là một trợ lý AI chuyên về n8n, phân tích sơ đồ usecase hoặc yêu cầu mô tả của họ. Dưới đây là tài liệu tham khảo:\n${guildKnowledge}, hãy phân tích yêu cầu người dùng từ đó đưa ra các node riêng lẻ để người dùng tự ghép lại thành workflow, viết ngắn thôi để còn đưa vào pinecone`,
-        //     }];
-
-        // const chatRequest = await openai.chat.completions.create({
-        //     model: "gpt-5-mini",
-        //     messages: PineconeTerror,
-        //     max_completion_tokens: 5000
-        // });
-
-        
-        // const reqMessage = chatRequest.choices[0].message;
-        // console.log('Đây là dữ liệu mà reqMessage trả về:', reqMessage);
-
-        // //Nhúng văn bản
-        // const embeddingResponse = await openai.embeddings.create({
-        //     model: "text-embedding-3-small",
-        //     input: reqMessage.content,
-        // });
-
-        // const vector = embeddingResponse.data[0].embedding;
-
-        // //Kết nối pinecone
-        // const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-        // const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
-        // const INDEX_NAME = process.env.INDEX_NAME;
-        // const INDEX_HOST = process.env.INDEX_HOST;
-        // const PRE_namespace = process.env.namespace;
-        // const namespace = pc.index(INDEX_NAME, INDEX_HOST).namespace(PRE_namespace);
-
-        // const pineconeResponse = await namespace.query({
-        //     vector: vector,
-        //     topK: 10,
-        //     includeMetadata: true,
-        //     includeValues: false
-        // });
-
-        // //log để kiểm tra kết nối
-        // console.log('Vector length:', vector.length);
-        // console.log('Pinecone matches:', pineconeResponse.matches?.length);
-        // console.log('Sample data:', pineconeResponse.matches?.[0]?.metadata);
-
-        // let MGE = null;
-
-        // // Xử lý Pinecone
-        // if (pineconeResponse.matches?.length > 0) {
-        //     const PineconeInfo = pineconeResponse.matches
-        //         .map(match => match.metadata.text || '')
-        //         .filter(Boolean)
-        //         .join('\n\n');
-
-        //     // Debug: In ra PineconeInfo để kiểm tra
-        //     console.log('PineconeInfo content:', PineconeInfo.substring(0, 200));
-
-        //     // Chỉ gán khi có dữ liệu thực sự
-        //     if (PineconeInfo.trim()) {
-        //         MGE = {
-        //             role: 'system',
-        //             content: `Tài liệu tham khảo liên quan:\n${PineconeInfo}`
-        //         };
-        //         console.log('✅ Đã tạo MGE với content length:', MGE.content.length);
-        //     }
-        // }
-
-        // if (MGE) {
-        //     history.messages.push(MGE);
-        //     console.log('✅ Đã push MGE vào history');
-        // } else {
-        //     console.log('❌ Không push MGE - không có dữ liệu');
-        // }
-
-
-        //Giới hạn lại lịch sử
+        // Giới hạn lại lịch sử
         let limitedMessages = [];
         if (history.messages.length > 0) {
             const systemMsg = history.messages.find(msg => msg.role === 'system');
             const otherMsgs = history.messages.filter(msg => msg.role !== 'system');
-            const lastMessages = otherMsgs.slice(-10); // lấy 10 tin nhắn gần nhất
+            const lastMessages = otherMsgs.slice(-10);
             limitedMessages = systemMsg ? [systemMsg, ...lastMessages] : lastMessages;
         }
 
-        // Gửi toàn bộ history.messages lên OpenAI
+        //Tạo tool
+        const tools = [
+            {
+                type: "function",
+                function: {
+                    name: "searchPinecone",
+                    description: "Tra cứu dữ liệu n8n đã nhúng trong Pinecone",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            query: {
+                                type: "string",
+                                description: "Câu hỏi hoặc từ khóa để tìm trong Pinecone"
+                            },
+                            topK: {
+                                type: "number",
+                                description: "Số lượng kết quả cần lấy",
+                                default: 5
+                            }
+                        },
+                        required: ["query"]
+                    }
+                }
+            }
+        ];
+
+        // Gửi lên OpenAI
         const chatCompletion = await openai.chat.completions.create({
-            model: "gpt-4.1-mini-2025-04-14",
-            messages: limitedMessages,
-            max_completion_tokens: 5000
+            model: "gpt-5-mini",
+            messages: limitedMessages.map(msg => ({
+                role: msg.role,
+                content: msg.content
+            })),
+            tools: tools,
+            max_completion_tokens: 3000
         });
+        //Respond của openai, có thể là trả lời trực tiếp hoặc call toool
+        const choice = chatCompletion.choices[0].message;
+        //check xem ai tìm cái gì, hoặc trả lời cái gì
+        console.log("ai đi tìm mấy cái này", JSON.stringify(choice, null, 2));
+
+
+        //nếu dùng tool
+        let aiMessage;
+        if (choice.tool_calls) {
+            console.log('ai đã dùng tool')
+            for (const toolCall of choice.tool_calls) {
+                if (toolCall.function?.name === "searchPinecone") {
+                    const args = JSON.parse(toolCall.function.arguments);
+                    const embeddingQuery = await openai.embeddings.create({
+                        model: "text-embedding-3-small",
+                        input: args.query,
+                    });
+                    const vector = embeddingQuery.data[0].embedding;
+
+                    const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+                    const namespace = pc.index(process.env.INDEX_NAME, process.env.INDEX_HOST).namespace(process.env.namespace);
+
+                    const pineconeRes = await namespace.query({
+                        vector,
+                        topK: args.topK || 10,
+                        includeMetadata: true
+                    });
+
+                    //check xem ai tìm đc cái gì
+                    console.log("Pinecone matches:", JSON.stringify(pineconeRes.matches, null, 2));
+
+                    const PineconeData = pineconeRes.matches
+                        ?.map(m => m.metadata.text || "")
+                        .filter(Boolean)
+                        .join("\n\n");
+
+                    const SupMessages = [
+                        ...limitedMessages,
+                        choice, // assistant message có tool_calls
+                        {
+                            role: "tool",
+                            tool_call_id: choice.tool_calls[0].id,
+                            content: PineconeData
+                        }
+                    ];
+
+                    //Gọi lại AI để trả lời ra màn
+                    const followUp = await openai.chat.completions.create({
+                        model: "gpt-4.1-mini-2025-04-14",
+                        messages: SupMessages,
+                    });
+                    aiMessage = followUp.choices[0].message;//trả lời dùng tool
+                }
+            }
+        } else {
+            aiMessage = choice;//trả lời không dùng tool
+        }
+
+        // XỬ LÝ AI RESPONSE: Extract JSON và convert thành Mermaid
+        const detectedJsonBlocks = extractJsonFromText(aiMessage.content);
+
+        // Convert từng JSON block thành Mermaid
+        for (let block of detectedJsonBlocks) {
+            try {
+                const mermaidCode = await convertJsonToMermaid(block.parsed);
+                block.mermaidCode = mermaidCode;
+            } catch (error) {
+                console.error('❌ Error converting to Mermaid:', error.message);
+                block.mermaidCode = null;
+            }
+        }
+
+        // Tạo AI message với metadata
+        const AiResponse = {
+            role: 'assistant',
+            content: aiMessage.content,
+            metadata: {
+                detectedJsonBlocks: detectedJsonBlocks,
+                hasImage: false
+            }
+        };
 
         // Thêm AI message vào history
-        const aiMessage = chatCompletion.choices[0].message;
-        history.messages.push(aiMessage);
+        history.messages.push(AiResponse);
 
         // Lưu lại vào MongoDB
         await history.save();
-        res.json({ reply: aiMessage.content });
+
+        // Trả về response có metadata
+        res.json({
+            reply: aiMessage.content,
+            metadata: {
+                detectedJsonBlocks: detectedJsonBlocks
+            }
+        });
+
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'AI Lỗi Rồi Mua Claude đi' });
+        res.status(500).json({ error: 'AI Lỗi Rồi' });
     }
 });
 
