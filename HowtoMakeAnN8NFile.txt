@@ -1,0 +1,1132 @@
+Các node của n8n, (lưu ý khi viết thì nghi đầy đủ cấu trúc của một workflow, node đơn hoặc nếu nhiều node thì cũng phải đầy đủ cấu trúc):
+node Manual Trigger: {
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        100
+      ],
+      "id": "b8b5b4ac-2c96-411c-84dd-9116b6ccc5e1",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node Chat Trigger: {
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "99b5f859-9984-44fb-916b-30094d2ad7fd",
+      "name": "When chat message received",
+      "webhookId": "caac4be9-9bb6-4a9f-8907-c781e4788e41"
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node Webhook: {
+  "nodes": [
+    {
+      "parameters": {
+        "path": "0ddf05e9-a776-4480-82ac-c83f81a558b9",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "449620d4-81c8-4e29-a901-8b52d5701554",
+      "name": "Webhook",
+      "webhookId": "0ddf05e9-a776-4480-82ac-c83f81a558b9"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node Respond to Webhook: {
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        220,
+        0
+      ],
+      "id": "38b88a81-11a7-41b4-b11b-dccb85fea0fa",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node Sheet với Document Actions: gồm Creat và Delete sheet
+node Sheet với  Sheet Within Document Actions: gồm Append or Update row in sheet, Append row in sheet, clear sheet, create sheet, delete sheet, delete row or columns, get row(s) in sheet, Update row in sheet.
+Mẫu cho node Sheet: {
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        220,
+        0
+      ],
+      "id": "1ebad19f-46e3-422e-a5a3-6124c1c74421",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SyV9GWRssPwgJv1b",
+          "name": "Hoàng"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node Drive có thể 
+File:
+Copy a file
+Create from text
+Delete a file
+Download a file
+Move a file
+Share a file
+Update a file
+Upload a file
+File/Folder:
+Search files and folders
+Folder:
+Create a folder
+Delete a folder
+Share a folder
+Shared Drive:
+Create a shared drive
+Delete a shared drive
+Get a shared drive
+Get Many shared drives
+Update a shared drive
+Mẫu cho node Drive: {
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "createFromText",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        220,
+        0
+      ],
+      "id": "76d592d4-dc98-4175-aeee-1876eaee8f79",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "9BZtryJVDu1qC56H",
+          "name": "Hoàng"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+Node Gmail có các chức năng:
+Draft:
+Create a draft
+Delete a draft
+Get a draft
+Get Many drafts
+Label:
+Create a label
+Delete a label
+Get a label
+Get Many labels
+Message:
+Add Label to a message
+Delete a message
+Get a message
+Get Many messages
+Mark as Read
+Mark as Unread
+Remove Label from a message
+Reply to a message
+Send a message
+Thread:
+Add Label to a thread
+Delete a thread
+Get a thread
+Get Many threads
+Remove Label from thread
+Reply to a message
+Trash a thread
+Untrash a thread
+
+Mẫu cho node Gmail: {
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "a67b7c6b-dfb0-452c-a35f-7ae4e965f43b",
+      "name": "Gmail",
+      "webhookId": "a852f063-2cf6-4985-a22f-15a4ec4e2290",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sSQ2oaTqe5Iq6Sg9",
+          "name": "Hoàng"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node Set có các chức năng:
+Edit Fields (Set)#
+Use the Edit Fields node to set workflow data. This node can set new data as well as overwrite data that already exists. This node is crucial in workflows which expect incoming data from previous nodes, such as when inserting values to Google Sheets or databases.
+
+Node parameters#
+These are the settings and options available in the Edit Fields node.
+
+Mode#
+You can either use Manual Mapping to edit fields using the GUI or JSON Output to write JSON that n8n adds to the input data.
+
+Fields to Set#
+If you select Mode > Manual Mapping, you can configure the fields by dragging and dropping values from INPUT.
+
+The default behavior when you drag a value is:
+
+n8n sets the value's name as the field name.
+The field value contains an expression which accesses the value.
+If you don't want to use expressions:
+
+Hover over a field. n8n displays the Fixed | Expressions toggle.
+Select Fixed.
+You can do this for both the name and value of the field.
+
+A gif showing the drag and drop action, as well as changing a field to fixed
+
+Keep Only Set Fields#
+Enable this to discard any input data that you don't use in Fields to Set.
+
+Include in Output#
+Choose which input data to include in the node's output data.
+
+Node options#
+Use these options to customize the behavior of the node.
+
+Include Binary Data#
+If the input data includes binary data, choose whether to include it in the Edit Fields node's output data.
+
+Ignore Type Conversion Errors#
+Manual Mapping only.
+
+Enabling this allows n8n to ignore some data type errors when mapping fields.
+
+Support Dot Notation#
+Mẫu node Set: {
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -140,
+        -100
+      ],
+      "id": "c78f3566-74b6-4a9b-bf81-975b8c7f3ccc",
+      "name": "Edit Fields"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node If: {
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "53a55ea2-d8c0-4796-952b-caa7246d7b90",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        180,
+        -60
+      ],
+      "id": "36856644-a3be-4593-a531-0a4c551370b5",
+      "name": "If"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node Switch: {
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c84a0ff3-114a-473e-8c48-c6b5e3581c9a"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        280,
+        20
+      ],
+      "id": "396de80c-9e11-473a-82ea-aa1c2c00772c",
+      "name": "Switch"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+Convert to File có thể:
+Convert to CSV
+Convert to HTML
+Convert to ICS
+Convert to JSON
+Convert to ODS
+Convert to RTF
+Convert to Text File
+Convert to XLS
+Convert to XLSX
+Move Base64 String to File
+Node parameters and options depend on the operation you select.
+Mẫu cho node Convert to file: {
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        375.4231021000031,
+        20
+      ],
+      "id": "d3a5712e-906c-4ef3-83cf-6cf0e505b202",
+      "name": "Convert to File"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+Extract From File có thể: 
+Extract From CSV: The "Comma Separated Values" file type is commonly used for tabulated data.
+Extract From HTML: Extract fields from standard web page HTML format files.
+Extract From JSON: Extract JSON data from a binary file.
+Extract From ICS: Extract fields from iCalendar format files.
+Extract From ODS: Extract fields from ODS spreadsheet files.
+Extract From PDF: Extract fields from Portable Document Format files.
+Extract From RTF: Extract fields from Rich Text Format files.
+Extract From Text File: Extract fields from a standard text file format.
+Extract From XLS: Extract fields from a Microsoft Excel file (older format).
+Extract From XLSX: Extract fields from a Microsoft Excel file.
+Move File to Base64 String: Converts binary data to a text-friendly base64 format.
+
+Mẫu cho node Extract From File: {
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        415.4231021000031,
+        248.41768149633805
+      ],
+      "id": "050e0ec3-b47a-4b01-a5cd-f107404ea7f2",
+      "name": "Extract from File"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+đây là node Code: {
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -60
+      ],
+      "id": "a6a4e1df-7896-484b-91e5-9eef0302f9b7",
+      "name": "Code"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+Node AI Agent có chứ năng: 
+An AI agent is an autonomous system that receives data, makes rational decisions, and acts within its environment to achieve specific goals. The AI agent's environment is everything the agent can access that isn't the agent itself. This agent uses external tools and APIs to perform actions and retrieve information. It can understand the capabilities of different tools and determine which tool to use depending on the task.
+
+Connect a tool
+
+You must connect at least one tool sub-node to an AI Agent node.
+
+Agent type
+
+Prior to version 1.82.0, the AI Agent had a setting for working as different agent types. This has now been removed and all AI Agent nodes work as a Tools Agent which was the recommended and most frequently used setting. If you're working with older versions of the AI Agent in workflows or templates, as long as they were set to 'Tools Agent', they should continue to behave as intended with the updated node.
+
+Mẫu node AI Agent: {
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        -260
+      ],
+      "id": "30d6caf5-0bb4-4eda-84c9-b169e870b7f5",
+      "name": "AI Agent"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+các tool giành riêng cho AI Agent vào sẽ nối với nó 
+chức năng: AI tool#
+In an AI context, a tool is an add-on resource that the AI can refer to for specific information or functionality when responding to a request. The AI model can use a tool to interact with external systems or complete specific, focused tasks.
+
+AI vector store#
+Vector stores, or vector databases, are databases designed to store numerical representations of information called embeddings.
+
+Chat model, phổ biến nhất là model openai
+mẫu tool openai các tool tức là node sẽ nối vào phần chatmodel của n8n sẽ có type @n8n/n8n-nodes-langchain.lmChatOpenAi: {
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        460,
+        -80
+      ],
+      "id": "ec602956-790b-4d61-aff4-f550907c20ee",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "inz5Ppk0ZJQ6qYN8",
+          "name": "Hoàng"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+mẫu tool openai khi kết nối với AI Agent:{
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        -260
+      ],
+      "id": "30d6caf5-0bb4-4eda-84c9-b169e870b7f5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -100,
+        -20
+      ],
+      "id": "ec602956-790b-4d61-aff4-f550907c20ee",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "inz5Ppk0ZJQ6qYN8",
+          "name": "Hoàng"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+tool pinecone: {
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "pineconeIndex": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -20,
+        20
+      ],
+      "id": "7a54df3f-419b-461d-8c25-329ab200b6d6",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "utOjrs3m5p4dZ9JZ",
+          "name": "Hoàng"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Pinecone Vector Store": {
+      "ai_tool": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+tool calculator: {
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        120
+      ],
+      "id": "be4d87a7-567a-4078-9332-a405a23eafa8",
+      "name": "Calculator"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node Wait có chức năng: The Wait node can Resume on the following conditions:
+
+After Time Interval: The node waits for a certain amount of time.
+At Specified Time: The node waits until a specific time.
+On Webhook Call: The node waits until it receives an HTTP call.
+On Form Submitted: The node waits until it receives a form submission.
+Refer to the more detailed sections below for more detailed instructions.
+
+After Time Interval#
+Wait for a certain amount of time.
+
+This parameter includes two more fields:
+
+Wait Amount: Enter the amount of time to wait.
+Wait Unit: Select the unit of measure for the Wait Amount. Choose from:
+Seconds
+Minutes
+Hours
+Days
+Refer to Time-based operations for more detail on how these intervals work and the timezone used.
+
+At Specified Time#
+Wait until a specific date and time to continue. Use the date and time picker to set the Date and Time.
+
+Refer to Time-based operations for more detail on the timezone used.
+
+On Webhook Call#
+This parameter enables your workflows to resume when the Wait node receives an HTTP call.
+
+The webhook URL that resumes the execution when called is generated at runtime. The Wait node provides the $execution.resumeUrl variable so that you can reference and send the yet-to-be-generated URL wherever needed, for example to a third-party service or in an email.
+
+When the workflow executes, the Wait node generates the resume URL and the webhook(s) in your workflow using the $execution.resumeUrl. This generated URL is unique to each execution, so your workflow can contain multiple Wait nodes and as the webhook URL is called it will resume each Wait node sequentially.
+
+Mẫu node Wait: {
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        -160
+      ],
+      "id": "e6bcf742-e3b4-4572-a648-f25f7afdbffe",
+      "name": "Wait",
+      "webhookId": "084a9134-932a-4477-aa4b-4b947a463b12"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+Chức năng của node Open AI: Operations#
+Assistant
+Create an Assistant
+Delete an Assistant
+List Assistants
+Message an Assistant
+Update an Assistant
+Text
+Message a Model
+Classify Text for Violations
+Image
+Analyze Image
+Generate an Image
+Audio
+Generate Audio
+Transcribe a Recording
+Translate a Recording
+File
+Delete a File
+List Files
+Upload a File
+
+Mẫu node OpenAI tạo ảnh(type của node OpenAI luôn là @n8n/n8n-nodes-langchain.openAi): {
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "image",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        640,
+        -160
+      ],
+      "id": "90774e61-d4c2-499c-80de-cddae9a4f4ba",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "inz5Ppk0ZJQ6qYN8",
+          "name": "Hoàng"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+Mẫu node OpenAI làm message assistant: {
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "assistant",
+        "assistantId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        640,
+        -160
+      ],
+      "id": "90774e61-d4c2-499c-80de-cddae9a4f4ba",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "inz5Ppk0ZJQ6qYN8",
+          "name": "Hoàng"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}
+
+node HTTP request có chức năng: Node parameters#
+Method#
+Select the method to use for the request:
+
+DELETE
+GET
+HEAD
+OPTIONS
+PATCH
+POST
+PUT
+URL#
+Enter the endpoint you want to use.
+
+Authentication#
+n8n recommends using the Predefined Credential Type option when it's available. It offers an easier way to set up and manage credentials, compared to configuring generic credentials.
+
+Predefined credentials#
+Credentials for integrations supported by n8n, including both built-in and community nodes. Use Predefined Credential Type for custom operations without extra setup. Refer to Custom API operations for more information.
+
+Generic credentials#
+Credentials for integrations not supported by n8n. You'll need to manually configure the authentication process, including specifying the required API endpoints, necessary parameters, and the authentication method.
+
+You can select one of the following methods:
+
+Basic auth
+Custom auth
+Digest auth
+Header auth
+OAuth1 API
+OAuth2 API
+Query auth
+Refer to HTTP request credentials for more information on setting up each credential type.
+
+Send Query Parameters#
+Query parameters act as filters on HTTP requests. If the API you're interacting with supports them and the request you're making needs a filter, turn this option on.
+
+Specify your query parameters using one of the available options:
+
+Using Fields Below: Enter Name/Value pairs of Query Parameters. To enter more query parameter name/value pairs, select Add Parameter. The name is the name of the field you're filtering on, and the value is the filter value.
+Using JSON: Enter JSON to define your query parameters.
+Refer to your service's API documentation for detailed guidance.
+
+Send Headers#
+Use this parameter to send headers with your request. Headers contain metadata or context about your request.
+
+Specify Headers using one of the available options:
+
+Using Fields Below: Enter Name/Value pairs of Header Parameters. To enter more header parameter name/value pairs, select Add Parameter. The name is the header you wish to set, and the value is the value you want to pass for that header.
+Using JSON: Enter JSON to define your header parameters.
+Refer to your service's API documentation for detailed guidance.
+
+Send Body#
+If you need to send a body with your API request, turn this option on.
+
+Then select the Body Content Type that best matches the format for the body content you wish to send.
+
+Form URLencoded#
+Use this option to send your body as application/x-www-form-urlencoded.
+
+Specify Body using one of the available options:
+
+Using Fields Below: Enter Name/Value pairs of Body Parameters. To enter more body parameter name/value pairs, select Add Parameter. The name should be the form field name, and the value is what you wish to set that field to.
+Using Single Field: Enter your name/value pairs in a single Body parameter with format fieldname1=value1&fieldname2=value2.
+Refer to your service's API documentation for detailed guidance.
+
+Form-Data#
+Use this option to send your body as multipart/form-data.
+
+Configure your Body Parameters by selecting the Parameter Type:
+
+Choose Form Data to enter Name/Value pairs.
+Choose n8n Binary File to pull the body from a file the node has access to.
+Name: Enter the ID of the field to set.
+Input Data Field Name: Enter the name of the incoming field containing the binary file data you want to process.
+Select Add Parameter to enter more parameters.
+
+Refer to your service's API documentation for detailed guidance.
+
+JSON#
+Use this option to send your body as JSON.
+
+Specify Body using one of the available options:
+
+Using Fields Below: Enter Name/Value pairs of Body Parameters. To enter more body parameter name/value pairs, select Add Parameter.
+Using JSON: Enter JSON to define your body.
+Refer to your service's API documentation for detailed guidance.
+
+n8n Binary File#
+Use this option to send the contents of a file stored in n8n as the body.
+
+Enter the name of the incoming field that contains the file as the Input Data Field Name.
+
+Refer to your service's API documentation for detailed guidance on how to format the file.
+
+Raw#
+Use this option to send raw data in the body.
+
+Content Type: Enter the Content-Type header to use for the raw body content. Refer to the IANA Media types documentation for a full list of MIME content types.
+Body: Enter the raw body content to send.
+Refer to your service's API documentation for detailed guidance.
+
+Node options#
+Select Add Option to view and select these options. Options are available to all parameters unless otherwise noted.
+
+Array Format in Query Parameters#
+Option availability
+
+This option is only available when you turn on Send Query Parameters.
+
+Use this option to control the format for arrays included in query parameters. Choose from these options:
+
+No Brackets: Arrays will format as the name=value for each item in the array, for example: foo=bar&foo=qux.
+Brackets Only: The node adds square brackets after each array name, for example: foo[]=bar&foo[]=qux.
+Brackets with Indices: The node adds square brackets with an index value after each array name, for example: foo[0]=bar&foo[1]=qux.
+Refer to your service's API documentation for guidance on which option to use.
+
+Batching#
+Control how to batch large numbers of input items:
+
+Items per Batch: Enter the number of input items to include in each batch.
+Batch Interval: Enter the time to wait between each batch of requests in milliseconds. Enter 0 for no batch interval.
+Ignore SSL Issues#
+By default, n8n only downloads the response if SSL certificate validation succeeds. If you'd like to download the response even if SSL certificate validation fails, turn this option on.
+
+Lowercase Headers#
+Choose whether to lowercase header names (turned on, default) or not (turned off).
+
+Redirects#
+Choose whether to follow redirects (turned on by default) or not (turned off). If turned on, enter the maximum number of redirects the request should follow in Max Redirects.
+
+Response#
+Use this option to set some details about the expected API response, including:
+
+Include Response Headers and Status: By default, the node returns only the body. Turn this option on to return the full response (headers and response status code) as well as the body.
+Never Error: By default, the node returns success only when the response returns with a 2xx code. Turn this option on to return success regardless of the code returned.
+Response Format: Select the format in which the data gets returned. Choose from:
+Autodetect (default): The node detects and formats the response based on the data returned.
+File: Select this option to put the response into a file. Enter the field name where you want the file returned in Put Output in Field.
+JSON: Select this option to format the response as JSON.
+Text: Select this option to format the response as plain text. Enter the field name where you want the file returned in Put Output in Field.
+Pagination#
+Use this option to paginate results, useful for handling query results that are too big for the API to return in a single call.
+
+Inspect the API data first
+
+Some options for pagination require knowledge of the data returned by the API you're using. Before setting up pagination, either check the API documentation, or do an API call without pagination, to see the data it returns.
+
+Understand pagination
+Configure the pagination settings:
+
+Pagination Mode:
+Off: Turn off pagination.
+Update a Parameter in Each Request: Use this when you need to dynamically set parameters for each request.
+Response Contains Next URL: Use this when the API response includes the URL of the next page. Use an expression to set Next URL.
+For example setups, refer to HTTP Request node cookbook | Pagination.
+
+n8n provides built-in variables for working with HTTP node requests and responses when using pagination:
+
+Variable	Description
+$pageCount	The pagination count. Tracks how many pages the node has fetched.
+$request	The request object sent by the HTTP node.
+$response	The response object from the HTTP call. Includes $response.body, $response.headers, and $response.statusCode. The contents of body and headers depend on the data sent by the API.
+API differences
+
+Different APIs implement pagination in different ways. Check the API documentation for the API you're using for details. You need to find out things like:
+
+Does the API provide the URL for the next page?
+Are there API-specific limits on page size or page number?
+The structure of the data that the API returns.
+Proxy#
+Use this option if you need to specify an HTTP proxy.
+
+Enter the Proxy the request should use. This takes precedence over global settings defined with the HTTP_PROXY, HTTPS_PROXY, or ALL_PROXY environment variables.
+
+Timeout#
+Use this option to set how long the node should wait for the server to send response headers (and start the response body). The node aborts requests that exceed this value for the initial response.
+
+Enter the Timeout time to wait in milliseconds.
+
+Tool-only options#
+The following options are only available when attached to an AI agent as a tool.
+
+Optimize Response#
+Whether to optimize the tool response to reduce the amount of data passed to the LLM. Optimizing the response can reduce costs and can help the LLM ignore unimportant details, often leading to better results.
+
+When optimizing responses, you select an expected response type, which determines other options you can configure. The supported response types are:
+
+JSON#
+When expecting a JSON response, you can configure which parts of the JSON data to use as a response with the following choices:
+
+Field Containing Data: This field identifies a specific part of the JSON object that contains your relevant data. You can leave this blank to use the entire response.
+Include Fields: This is how you choose which fields you want in your response object. There are three choices:
+All: Include all fields in the response object.
+Selected: Include only the fields specified below.
+Fields: A comma-separated list of fields to include in the response. You can use dot notation to specify nested fields. You can drag fields from the Input panel to add them to the field list.
+Exclude: Include all fields except the fields specified below.
+Fields: A comma-separated list of fields to exclude from the response. You can use dot notation to specify nested fields. You can drag fields from the Input panel to add them to the field list.
+HTML#
+When expecting HTML, you can identify the part of an HTML document relevant to the LLM and optimize the response with the following options:
+
+Selector (CSS): A specific element or element type to include in the response HTML. Uses the body element by default.
+Return Only Content: Whether to strip HTML tags and attributes from the response, leaving only the actual content. This uses fewer tokens and may be easier for the model to understand.
+Elements To Omit: A comma-separated list of CSS selectors to exclude when extracting content.
+Truncate Response: Whether to limit the response size to save tokens.
+Max Response Characters: The maximum number of characters to include in the HTML response. The default value is 1000.
+Text#
+When expecting a generic Text response, you can optimize the results with the following options:
+
+Truncate Response: Whether to limit the response size to save tokens.
+Max Response Characters: The maximum number of characters to include in the HTML response. The default value is 1000.
+Import curl command#
+curl is a command line tool and library for transferring data with URLs.
+
+You can use curl to call REST APIs. If the API documentation of the service you want to use provides curl examples, you can copy them out of the documentation and into n8n to configure the HTTP Request node.
+
+Import a curl command:
+
+From the HTTP Request node's Parameters tab, select Import cURL. The Import cURL command modal opens.
+Paste your curl command into the text box.
+Select Import. n8n loads the request configuration into the node fields. This overwrites any existing configuration.
+
+Mẫu node HTTP request: {
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        40
+      ],
+      "id": "f84e1e21-d1c1-4545-9870-21a8e195f0f7",
+      "name": "HTTP Request"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b5b422c2b1e6ad2caf2dbb34d15f6f78ec4dbd9c658664817368688e5357364"
+  }
+}

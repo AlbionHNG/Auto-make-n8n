@@ -5,15 +5,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI bán 10 cân hẹ</title>
+  <link rel="icon" type="image/x-icon" href="https://clickwo.com/favicon.ico">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script>hljs.highlightAll();</script>
   <!-- Import mermaid -->
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script>
-  mermaid.initialize({ startOnLoad: false });
-</script>
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: false });
+  </script>
+  
   <style>
     body {
       background: #f4f4f4;
@@ -136,6 +137,36 @@
       color: #007bff;
       user-select: none;
     }
+
+    #file-preview {
+      transition: all 0.3s ease;
+    }
+
+    #file-preview:hover {
+      background: #bbdefb !important;
+    }
+
+    .file-info {
+      font-family: 'Segoe UI', sans-serif;
+      line-height: 1.2;
+    }
+
+ .file-display {
+    margin-top: 8px;
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 300px;
+    transition: all 0.2s ease;
+}
+
+.file-display:hover {
+    background: #bbdefb;
+}
   </style>
 </head>
 
@@ -149,7 +180,8 @@
     <form id="chatForm" class="chat-form">
       <textarea name="prompt" id="prompt" placeholder="Nhập tin nhắn..." rows="2" required></textarea>
       <label class="file-label">
-        <input type="file" name="image" id="imageInput" accept="image/*" style="display:none">
+        <input type="file" name="image" id="imageInput"
+          accept="image/*, .pdf, .docx, .xlsx" style="display:none">
         <span><i class="fa-solid fa-folder-open"></i></span>
       </label>
       <button type="submit">Gửi</button>
