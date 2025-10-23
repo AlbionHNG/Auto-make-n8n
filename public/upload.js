@@ -1,3 +1,4 @@
+const API_URL = '/n8n_connect/api'
 document.getElementById("workflowForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -15,6 +16,8 @@ document.getElementById("workflowForm").addEventListener("submit", async (e) => 
     const baseUrl = document.getElementById("baseUrl").value.trim();
     const fileInput = document.getElementById("workflowFile");
 
+
+
     if (!fileInput.files[0]) {
         statusDiv.className = "error";
         statusDiv.textContent = "Vui lòng chọn file JSON";
@@ -23,7 +26,7 @@ document.getElementById("workflowForm").addEventListener("submit", async (e) => 
 
     const file = fileInput.files[0];
 
-    // Validate file type
+    // Kiểm tra định dạng file
     if (!file.name.endsWith('.json')) {
         statusDiv.className = "error";
         statusDiv.textContent = "Vui lòng chọn file có định dạng .json";
@@ -58,7 +61,7 @@ document.getElementById("workflowForm").addEventListener("submit", async (e) => 
 
 
         // Gửi yêu cầu tới proxy để tạo workflow
-        const response = await fetch("/api/n8n/workflows", {
+        const response = await fetch(`${API_URL}/api/n8n/workflows`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -69,7 +72,7 @@ document.getElementById("workflowForm").addEventListener("submit", async (e) => 
                 workflowData: workflowData
             })
         });
-
+        //Nhận respone
         const responseData = await response.json();
 
         if (responseData.success) {
@@ -98,7 +101,7 @@ document.getElementById("workflowForm").addEventListener("submit", async (e) => 
     }
 });
 
-// Helper function to read file as text
+// Hàm hỗ trợ đọc file
 function readFileAsText(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -108,7 +111,7 @@ function readFileAsText(file) {
     });
 }
 
-// Test connection function
+// Hàm kiểu tra api và url
 async function testConnection() {
     const apiKey = document.getElementById("apiKey").value.trim();
     const baseUrl = document.getElementById("baseUrl").value.trim();
@@ -119,7 +122,7 @@ async function testConnection() {
     }
     //Gửi yêu cầu tới proxy để kiểm tra kết nối
     try {
-        const response = await fetch("/api/n8n/test", {
+        const response = await fetch(`${API_URL}/api/n8n/test`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -133,7 +136,7 @@ async function testConnection() {
         const result = await response.json();
 
         if (result.success) {
-            alert(`Kết nối thành công! Tìm thấy ${result.workflowCount} workflows.`);
+            alert(`Kết nối thành công! Tìm thấy ${result.workflowCount} workflows. Phiên bản n8n hiện tại là ${result.n8nVersion}`);
         } else {
             alert(`Lỗi kết nối: ${result.error}`);
         }

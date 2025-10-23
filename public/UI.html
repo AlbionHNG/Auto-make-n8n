@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weaviate Control Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .content {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        button.nav-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        button.nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        button.nav-btn.active {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px 12px;
+            margin: 5px 0 15px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            max-height: 300px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-primary {
+            background: #667eea;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-secondary {
+            background: black;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧩 Weaviate Control Panel</h1>
+    <div class="Menu"><a href="main.html" style="color: white; text-decoration: none;">
+        <h1><i class="fa-solid fa-house"></i> Trang chủ</h1></a></div>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <button class="nav-btn active" onclick="showSection('createSchema', this)">📝 Tạo Schema</button>
+            <button class="nav-btn" onclick="showSection('viewSchema', this)">📄 Xem Schema</button>
+            <button class="nav-btn" onclick="showSection('addData', this)">📦 Thêm Dữ Liệu</button>
+            <button class="nav-btn" onclick="showSection('viewData', this)">🔍 Xem Dữ Liệu</button>
+            <button class="nav-btn" onclick="showSection('apiManager', this)">⚙️ Các api hiện có</button>
+            <button class="nav-btn" onclick="showSection('apiMaker', this)">🛠️ Tạo API</button>
+            <button class="nav-btn" onclick="showSection('nodeManager', this)">⚙️ Các node hiện có</button>
+            <button class="nav-btn" onclick="showSection('nodeMaker', this)">🛠️ Thêm Node mới</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Tạo schema -->
+            <div id="createSchema" class="section active">
+                <h2>🧱 Tạo Schema</h2>
+                <input type="text" id="className" placeholder="Tên class..." required>
+
+                <div id="propertiesContainer">
+                    <div class="property-group">
+                        <input type="text" class="property-name" placeholder="Tên thuộc tính..." required>
+                        <select class="property-type">
+                            <option value="text">text</option>
+                            <option value="string">string</option>
+                            <option value="int">int</option>
+                            <option value="number">number</option>
+                            <option value="boolean">boolean</option>
+                            <option value="date">date</option>
+                            <option value="geoCoordinates">geoCoordinates</option>
+                            <option value="phoneNumber">phoneNumber</option>
+                            <option value="uuid">uuid</option>
+                            <option value="blob">blob</option>
+                            <option value="objects">objects</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-secondary" type="button" onclick="removeProperty()">➖ Bớt</button>
+                    <button class="btn btn-primary" type="button" onclick="addProperty()">➕ Thêm</button>
+                </div>
+
+                <button class="btn btn-success" style="margin-top:15px;" onclick="createSchema()">Tạo Schema</button>
+                <pre id="schemaOutput"></pre>
+            </div>
+
+
+            <!-- Xem schema -->
+            <div id="viewSchema" class="section">
+                <h2>📄 Xem Schema</h2>
+                <input type="text" id="viewClassName" placeholder="Nhập class name...">
+                <button class="btn btn-primary" onclick="viewSchema()">Xem</button>
+                <button class="btn btn-danger" onclick="deleteSchema()">Xóa Schema</button>
+                <pre id="viewSchemaOutput"></pre>
+            </div>
+
+            <!-- Thêm dữ liệu -->
+            <div id="addData" class="section">
+                <h2>📦 Thêm Dữ Liệu</h2>
+                <input type="text" id="dataClassName" placeholder="Class name..." required>
+                <textarea id="dataProperties" placeholder='Nhập dữ liệu JSON...'></textarea>
+                <button class="btn btn-primary" onclick="addData()">Thêm Dữ Liệu</button>
+                <pre id="addDataOutput"></pre>
+            </div>
+
+            <!-- Xem dữ liệu -->
+            <div id="viewData" class="section">
+                <h2>🔍 Xem Dữ Liệu</h2>
+                <input type="text" id="viewDataClassName" placeholder="Nhập class name..." required>
+                <button class="btn btn-primary" onclick="viewData()">Xem Dữ Liệu</button>
+                <pre id="dataOutput"></pre>
+            </div>
+
+            <!-- Quản lý Node -->
+
+            <div id="nodeManager" class="section">
+                <input type="text" id="searchInput" placeholder="Nhập từ khóa và nhấn Enter..."
+                    onkeyup="searchNode(event)"
+                    oninput="searchNode()">
+                <h2>các node hiện có</h2>
+                <ul id="nodeList"></ul>
+            </div>
+
+            <!-- thêm node -->
+            <div id="nodeMaker" class="section">
+                <h2>🛠️ Tạo Node Mới</h2>
+                <div id="nodeMakerContainer">
+                    <div class="makerForm">
+                        <input type="text" placeholder="tên node..." id="nodeName" required>
+                        <input type="text" placeholder="operator" id="operator">
+                        <input type="text" placeholder="mô tả..." id="nodeDescription" required>
+                        <textarea placeholder="JsonCode" id="JsonCode" required></textarea>
+                        <input type="text" placeholder="phương thức api..." id="nodeMethod">
+                    </div>
+                    <button class="btn btn-success" id="createNodeBtn" onclick="createNode()">Tạo</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-secondary" type="button" onclick="removeNode()">➖ Bớt</button>
+                    <button class="btn btn-primary" type="button" onclick="addNode()">➕ Thêm</button>
+                </div>
+                <pre id="nodeOutput"></pre>
+            </div>
+
+            <!-- Quản lý API -->
+            <div id="apiManager" class="section">
+                <h2>các api hiện có</h2>
+                <ul id="apiList"></ul>
+            </div>
+
+            <!-- Tạo API mới -->
+            <div id="apiMaker" class="section">
+                <h2>🛠️ Tạo API Mới</h2>
+                <div id="apiMakerContainer">
+                    <div class="makerForm">
+                        <input type="text" placeholder="tên api..." id="apiName" required>
+                        <input type="text" placeholder="URL" id="apiURL" required>
+                        <input type="text" placeholder="mô tả..." id="description" required>
+                        <input type="text" placeholder="APIParams" id="apiParams" required>
+                        <input type="text" placeholder="API Method..." id="apiMethod" required>
+                        <input type="text" placeholder="catagory" id="apiCatagory" required>
+                    </div>
+                    <button class="btn btn-success" id="createApiBtn" onclick="createAPI()">tạo</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-secondary" type="button" onclick="removeAPI()">➖ Bớt</button>
+                    <button class="btn btn-primary" type="button" onclick="addAPI()">➕ Thêm</button>
+                </div>
+                <pre id="apiOutput"></pre>
+            </div>
+        </div>
+        <script>
+            // Thêm UI thuộc tính
+            function addProperty() {
+                const container = document.getElementById('propertiesContainer');
+                const div = document.createElement('div');
+                div.classList.add('property-group');
+                div.innerHTML = `
+                <input type="text" class="property-name" placeholder="Tên thuộc tính..." required>
+                <select class="property-type">
+                     <option value="text">text</option>
+                            <option value="string">string</option>
+                            <option value="int">int</option>
+                            <option value="number">number</option>
+                            <option value="boolean">boolean</option>
+                            <option value="date">date</option>
+                            <option value="geoCoordinates">geoCoordinates</option>
+                            <option value="phoneNumber">phoneNumber</option>
+                            <option value="uuid">uuid</option>
+                            <option value="blob">blob</option>
+                            <option value="objects">objects</option>
+                </select>
+            `;
+                container.appendChild(div);
+            }
+            // Xóa UI thuộc tính
+            function removeProperty() {
+                const container = document.getElementById('propertiesContainer');
+                if (container.children.length > 1) {
+                    container.removeChild(container.lastChild);
+                }
+            }
+            // Thêm UI API
+            function addAPI() {
+                const container = document.getElementById('apiMakerContainer');
+                const div = document.createElement('div');
+                div.classList.add('makerForm');
+                div.innerHTML = `
+                    <div class="makerForm">
+                        <input type="text" placeholder="tên api..." id="apiName" required>
+                        <input type="text" placeholder="URL" id="apiURL" required>
+                        <input type="text" placeholder="mô tả..." id="description" required>
+                        <input type="text" placeholder="APIParams" id="apiParams" required>
+                        <input type="text" placeholder="API Method..." id="apiMethod" required>
+                        <input type="text" placeholder="catagory" id="apiCatagory" required>
+                    </div>
+            `;
+                container.appendChild(div);
+            }
+            //Xóa UI API
+            function removeAPI() {
+                const container = document.getElementById('apiMakerContainer');
+                if (container.children.length > 1) {
+                    container.removeChild(container.lastChild);
+                }
+            }
+
+            // Chuyển tab
+            function showSection(id, btn) {
+                document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+            //tạo schema mới
+            async function createSchema() {
+                const cls = document.getElementById('className').value.trim();
+                const nameInputs = document.querySelectorAll('.property-name');
+                const typeSelects = document.querySelectorAll('.property-type');
+
+                const properties = Array.from(nameInputs).map((input, i) => ({
+                    name: input.value.trim(),
+                    dataType: [typeSelects[i].value]
+                }));
+
+                const res = await fetch('/schema', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ class: cls, properties })
+                });
+
+                document.getElementById('schemaOutput').textContent = JSON.stringify(await res.json(), null, 2);
+            }
+            //Hiển thị schema đc chọn
+            async function viewSchema() {
+                const name = document.getElementById('viewClassName').value.trim();
+                const res = await fetch(`/schema/${name}`);
+                document.getElementById('viewSchemaOutput').textContent = JSON.stringify(await res.json(), null, 2);
+            }
+            //Xóa
+            async function deleteSchema() {
+                const name = document.getElementById('viewClassName').value.trim();
+                if (!confirm(`Xóa schema ${name}?`)) return;
+                const res = await fetch(`/schema/${name}`, { method: 'DELETE' });
+                document.getElementById('viewSchemaOutput').textContent = JSON.stringify(await res.json(), null, 2);
+            }
+            //Thêm dữ liệu vào schema đã tạo
+            async function addData() {
+                const className = document.getElementById('dataClassName').value.trim();
+                const jsonStr = document.getElementById('dataProperties').value;
+                let jsonData;
+                try { jsonData = JSON.parse(jsonStr); } catch { alert('JSON không hợp lệ'); return; }
+                const res = await fetch(`/objects/${className}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(jsonData)
+                });
+                document.getElementById('addDataOutput').textContent = JSON.stringify(await res.json(), null, 2);
+            }
+            //Hiển thị data của schema đã tạo
+            async function viewData() {
+                const className = document.getElementById('viewDataClassName').value.trim();
+                const res = await fetch(`/objects/${className}`);
+                document.getElementById('dataOutput').textContent = JSON.stringify(await res.json(), null, 2);
+            }
+
+            //thêm api mới  
+            async function createAPI() {
+                try {
+                    const api_Name = document.querySelector('#apiMakerContainer .makerForm #apiName').value.trim();
+                    const api_URL = document.querySelector('#apiMakerContainer .makerForm #apiURL').value.trim();
+                    const description = document.querySelector('#apiMakerContainer .makerForm #description').value.trim();
+                    const parameter = document.querySelector('#apiMakerContainer .makerForm #apiParams').value.trim();
+                    const method = document.querySelector('#apiMakerContainer .makerForm #apiMethod').value.trim();
+                    const category = document.querySelector('#apiMakerContainer .makerForm #apiCatagory').value.trim();
+                    if (!api_URL || !api_Name || !description || !parameter || !method || !category) {
+                        alert('Vui lòng điền đầy đủ thông tin!');
+                        return;
+                    }
+                    const res = await fetch('/NEW_API', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ api_URL, api_Name, description, parameter, method, category })
+                    });
+                    alert('Tạo API thành công api có tên: ' + api_Name);
+                    document.getElementById('apiOutput').textContent = JSON.stringify(await res.json(), null, 2);
+                } catch (error) {
+                    console.error('Lỗi rồi:', error);
+                }
+            };
+            // Load API
+            async function loadAPI() {
+                try {
+                    const result = await makeRequest('/api?limit=50');
+                    currentAPI = result.api;
+                    displayAPI(currentAPI);
+                } catch (error) {
+                    document.getElementById('apiList').innerHTML =
+                        `<div class="error">Failed to load API: ${error}</div>`;
+                }
+            }
+            //Hiển thị nhg là api
+            async function viewAPI() {
+                try {
+                    const limit = 50;
+                    const res = await fetch(`/GetAPI?limit=${limit}`);
+                    if (!res.ok) throw new Error(`Server trả lỗi ${res.status}`);
+
+                    const data = await res.json();
+
+                    // Kiểm tra cấu trúc dữ liệu
+                    const apis = data?.data?.Get?.API_LIBRARY || data?.data || [];
+
+                    const container = document.getElementById('apiList');
+                    container.innerHTML = '';
+
+                    if (apis.length === 0) {
+                        container.innerHTML = '<li>⚠️ Không có API nào được tìm thấy</li>';
+                        return;
+                    }
+                    apis.forEach(api => {
+                        const li = document.createElement('li');
+                        li.style.padding = '10px';
+                        li.style.borderBottom = '1px solid #ddd';
+                        li.innerHTML = `
+          📡Tên API: <b>${api.api_Name || 'N/A'}</b><br>
+          🏢URL:<strong> ${api.api_URL || api.CompanyName || 'Chưa rõ'}</strong><br>
+          📖 Mô tả: ${api.description || 'Không có mô tả'}<br>
+          🔗 Thông số: <span style="color:blue"><b>${api.parameter || '-'}</b></span><br>
+          ⚙️ Phương thức: <span style="color:purple">${api.method || '-'}</span><br>
+            Danh mục: <span style="color:green"><b>${api.category || '-'}</b></span><br>
+          Ngày tạo: ${api.publishedDate || 'chưa rõ'}<br>
+          <button class="btn btn-danger" onclick="deleteAPI('${api._additional?.id || api.id}')">Xóa API</button>
+        `;
+                        container.appendChild(li);
+                    });
+                } catch (err) {
+                    console.error('Lỗi:', err);
+                    document.getElementById('apiList').innerHTML = `<li style="color:red;">Lỗi khi tải API: ${err.message}</li>`;
+                }
+            }
+
+            // --- XÓA API ---
+            async function deleteAPI(apiId) {
+                if (!confirm(`Xóa API với ID ${apiId}?`)) return;
+                const res = await fetch(`/DeleteAPI/${apiId}`, { method: 'DELETE' });
+                const json = await res.json();
+                alert('Xóa thành công api có id: ' + apiId);
+                viewAPI();
+            }
+
+
+            //thêm node mới  
+            async function createNode() {
+                try {
+                    const node_Name = document.querySelector('#nodeMakerContainer .makerForm #nodeName').value.trim();
+                    const operator = document.querySelector('#nodeMakerContainer .makerForm #operator').value.trim();
+                    const description = document.querySelector('#nodeMakerContainer .makerForm #nodeDescription').value.trim();
+                    const method = document.querySelector('#nodeMakerContainer .makerForm #nodeMethod').value.trim();
+                    const jsonCode = document.querySelector('#nodeMakerContainer .makerForm #JsonCode').value;
+                    console.log("Gửi đi", node_Name, jsonCode);
+                    if (!node_Name || !description || !jsonCode) {
+                        alert('Vui lòng điền đầy đủ nodeName, description và JsonCode ');
+                        return;
+                    }
+                    const res = await fetch('/NEW_NODE', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ node_Name, operator, description, method, jsonCode })
+                    });
+                    const result = await res.json();
+
+                    if (res.ok) {
+                        viewNode();
+                        alert('Tạo API thành công api có tên: ' + node_Name);
+                        document.getElementById('nodeName').value = "";
+                        document.getElementById('operator').value = "";
+                        document.getElementById('nodeDescription').value = "";
+                        document.getElementById('nodeMethod').value = "";
+                        document.getElementById('JsonCode').value = "";
+                    } else {
+                        alert('Lỗi khi tạo node: ' + (result.message || 'Unknown error'));
+                    }
+                    document.getElementById('apiOutput').textContent = JSON.stringify(result, null, 2);
+                } catch (error) {
+                    console.error('Lỗi rồi:', error);
+                }
+            };
+            // Load node
+            async function loadNode() {
+                try {
+                    const result = await fetch('/node?limit=20');
+                    currentNode = result.node;
+                    displayNode(currentNode);
+                } catch (error) {
+                    document.getElementById('nodeList').innerHTML =
+                        `<div class="error">Failed to load node: ${error}</div>`;
+                }
+            }
+            //Hiển thị nhg là ndoe
+            async function viewNode() {
+                try {
+                    const limit = 20;
+                    const res = await fetch(`/GetNode?limit=${limit}`);
+                    if (!res.ok) throw new Error(`Server trả lỗi ${res.status}`);
+
+                    const data = await res.json();
+
+                    // Kiểm tra cấu trúc dữ liệu
+                    const nodes = data?.data?.Get?.N8N_Nodes || data?.data || [];
+                    console.log("Các node hiện có:", nodes);
+                    const container = document.getElementById('nodeList');
+                    container.innerHTML = '';
+
+                    if (nodes.length === 0) {
+                        container.innerHTML = '<li>⚠️ Không có node nào được tìm thấy</li>';
+                        return;
+                    }
+                    nodes.forEach(node => {
+                        const li = document.createElement('li');
+                        li.style.padding = '10px';
+                        li.style.borderBottom = '1px solid #ddd';
+                        li.innerHTML = `
+          🏢Tên node:<strong> ${node.node_Name || node.nodeName || 'Chưa rõ'}</strong><br>
+          📡Operator: <b>${node.operator || 'N/A'}</b><br>
+          📖 Mô tả: ${node.description || 'Không có mô tả'}<br>
+          ⚙️ Phương thức: <span><b style="color:purple">${node.method || '-'}</b></span><br>
+          🔗 JsonCode: <span style="color:blue"><b>${node.jsonCode || '-'}</b></span><br>
+          Ngày tạo: ${node.publishedDate || 'chưa rõ'}<br>
+          <button class="btn btn-danger" onclick="deleteNode('${node._additional?.id || node.id}')">Xóa API</button>
+        `;
+                        container.appendChild(li);
+                    });
+                } catch (err) {
+                    console.error('Lỗi:', err);
+                    document.getElementById('nodeList').innerHTML = `<li style="color:red;">Lỗi khi tải API: ${err.message}</li>`;
+                }
+            }
+
+            // --- XÓA API ---
+            async function deleteNode(nodeId) {
+                if (!confirm(`Xóa Node với ID ${nodeId}?`)) return;
+                const res = await fetch(`/DeleteNode/${nodeId}`, { method: 'DELETE' });
+                const json = await res.json();
+                alert('Xóa thành công api có id: ' + nodeId);
+                viewNode();
+            }
+            // Tự động load node khi mở trang nếu ô tìm kiếm trống
+            function autoLoadNode(keyword) {
+                if (!keyword || keyword.length === 0) {
+                    setTimeout(() => {
+                        viewNode();
+                    }, 500);
+                }
+            }
+            // Tìm node
+            async function searchNode(event) {
+                const keyword = document.getElementById('searchInput').value.trim();
+                if (!event) {
+                    autoLoadNode(keyword);
+                    return;
+                }
+                if (event.key === 'Enter') {
+                    if (keyword.length === 0) {
+                        setTimeout(() => {
+                            viewNode();
+                        }, 0);
+                        return;
+                    }
+                    console.log('🔍 Tìm kiếm node trong frondend với từ khóa:', keyword);
+                    const res = await fetch(`/SearchNode?keyword=${encodeURIComponent(keyword)}&limit=20`);
+                    const data = await res.json();
+                    const nodes = data?.data?.Get?.N8N_Nodes || data?.data || [];
+                    console.log("Kết quả tìm kiếm:", nodes);
+
+                    const container = document.getElementById('nodeList');
+                    container.innerHTML = '';
+
+                    if (nodes.length === 0) {
+                        container.innerHTML = '<li>⚠️ Không tìm thấy node nào phù hợp</li>';
+                        return;
+                    }
+
+                    nodes.forEach(node => {
+                        const li = document.createElement('li');
+                        li.style.padding = '10px';
+                        li.style.borderBottom = '1px solid #ddd';
+                        li.innerHTML = `
+                🏢Tên node:<strong> ${node.node_Name || node.nodeName || 'Chưa rõ'}</strong><br>
+                📡Operator: <b>${node.operator || 'N/A'}</b><br>
+                📖 Mô tả: ${node.description || 'Không có mô tả'}<br>
+                ⚙️ Phương thức: <span><b style="color:purple">${node.method || '-'}</b></span><br>
+                🔗 JsonCode: <span style="color:blue"><b>${node.jsonCode || '-'}</b></span><br>
+                Ngày tạo: ${node.publishedDate || 'chưa rõ'}<br>
+                <button class="btn btn-danger" onclick="deleteNode('${node._additional?.id || node.id}')">Xóa Node</button>
+            `;
+                        container.appendChild(li);
+                    });
+                }
+            }
+            //load API và Node khi mở trang
+            document
+                .querySelector('button.nav-btn[onclick="showSection(\'nodeManager\', this)"]')
+                .addEventListener('click', viewNode);
+            document
+                .querySelector('button.nav-btn[onclick="showSection(\'apiManager\', this)"]')
+                .addEventListener('click', viewAPI);
+        </script>
+</body>
+</html>

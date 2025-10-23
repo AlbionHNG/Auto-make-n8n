@@ -26,7 +26,6 @@ const messageSchema = new mongoose.Schema({
         forceJsonData: mongoose.Schema.Types.Mixed,
         forceMermaidCode: String,
         hasFile: Boolean,
-       
         fileInfo: {
             type: {
                 type: String, // ảnh hoặc file
@@ -46,6 +45,12 @@ const chatHistorySchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
+    },
+    sessionName:{
+        type: String,
+        default: function() {
+            return `Chat ${new Date().toLocaleDateString('vi-VN')}`;
+        }
     },
     messages: [messageSchema]
 }, { timestamps: true });

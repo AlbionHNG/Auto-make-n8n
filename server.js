@@ -5,15 +5,15 @@ const fs = require('fs')
 const { OpenAI } = require('openai');
 const dotenv = require('dotenv');
 const path = require('path');
-const { Pinecone } = require('@pinecone-database/pinecone')
+const { Pinecone } = require('@pinecone-database/pinecone');
 const mongoose = require('mongoose');
 const ChatHistory = require('./chatHistory');
+const WeaviateManerger = require('./weaviate.js');
 const proxyRoutes = require('./proxy.js');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const xlsx = require('xlsx');
 const cors = require('cors');
-
 
 // CORS
 app.use(cors({
@@ -28,7 +28,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 app.use(express.json({ limit: '10mb' }));
-app.use('/', proxyRoutes);
+app.use('/n8n_connect/api', proxyRoutes);
+app.use('/', WeaviateManerger);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -43,9 +44,8 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-
-// Function để extract JSON từ text
-function extractJsonFromText(text) {
+// Function để extract JSON từ respond của ai
+function extractJsonFromText(text) {//Lấy từ const detectedJsonBlocks = extractJsonFromText(aiMessage.content);
     const jsonBlockRegex = /```json\s*([\s\S]*?)```/gi;//Tìm bọc trong markdown
     const jsonBlocks = [];
     let match;
@@ -120,7 +120,7 @@ function cleanNodeType(nodeType) {
     return typeMap[cleanType] || cleanType;
 }
 // Thêm thông tin node vào label trong Mermaid
-function enhanceNodeLabels(mermaidCode, workflowData) {
+function enhanceNodeLabels(mermaidCode, workflowData) {//lấy từ code của convertJsonToMermaid
     if (!workflowData || !workflowData.nodes) return mermaidCode;
 
     const nodeMap = {};
@@ -160,7 +160,7 @@ function enhanceNodeLabels(mermaidCode, workflowData) {
 }
 
 // Function để convert JSON thành Mermaid (chuyển tại server khi đăng)
-async function convertJsonToMermaid(workflowData) {
+async function convertJsonToMermaid(workflowData) {//Lấy từ lời gọi hàm const mermaidCode = await convertJsonToMermaid(block.parsed);
     const payload = {
         workflow_data: workflowData,
         params: {
@@ -205,10 +205,125 @@ async function convertJsonToMermaid(workflowData) {
     }
 }
 
+// API lấy danh sách sessions
+app.get('/sessions', async (req, res) => {
+    try {
+        const sessions = await ChatHistory.find({}, {
+            sessionId: 1,
+            sessionName: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            messages: 1,
+        }).sort({ updatedAt: -1 });
+
+        // Tính số lượng tin nhắn cho mỗi session
+        const sessionsWithCount = sessions.map(session => ({
+            sessionId: session.sessionId,
+            sessionName: session.sessionName,
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt,
+            messageCount: session.messages ? session.messages.filter(msg =>
+                msg.role === 'user' || msg.role === 'assistant'
+            ).length : 0
+        }));
+
+        res.json({
+            success: true,
+            sessions: sessionsWithCount
+        });
+    } catch (err) {
+        console.error('Lỗi khi lấy danh sách sessions:', err);
+        res.status(500).json({ success: false, error: 'Lỗi server' });
+    }
+});
+
+// API tạo session mới
+app.post('/sessions/create', async (req, res) => {
+    try {
+        const { sessionName } = req.body;//Tạo name = null đc gửi
+        const newSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);//Tạo sessionid
+        //Tạo chat
+        const newSession = new ChatHistory({
+            sessionId: newSessionId,
+            sessionName: sessionName || `Chat ${new Date().toLocaleDateString('vi-VN')}`,
+            messages: [
+                {
+                    role: 'system',
+                    content: `Bạn là một trợ lý AI chuyên về n8n. Khi viết code json n8n hãy luôn để nó bên trong \`\`\`json \`\`\`. Dưới đây là tài liệu tham khảo:\n${guildKnowledge}.`
+                }
+            ]
+        });
+
+        await newSession.save();//lưu
+        //Gửi lại cho client tức createNewSession
+        res.json({
+            success: true,
+            sessionId: newSessionId,
+            sessionName: newSession.sessionName,
+            message: 'Tạo session mới thành công'
+        });
+    } catch (err) {
+        console.error('Lỗi khi tạo session:', err);
+        res.status(500).json({ success: false, error: 'Không thể tạo session mới' });
+    }
+});
+
+// API đổi tên session
+app.put('/sessions/:sessionId/rename', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const { newName } = req.body;
+
+        if (!newName || newName.trim() === '') {
+            return res.status(400).json({ success: false, error: 'Tên session không được để trống' });
+        }
+
+        const session = await ChatHistory.findOneAndUpdate(
+            { sessionId },//filler
+            { sessionName: newName.trim() },//kẻ được chọn
+            { new: true }
+        );
+
+        if (!session) {
+            return res.status(404).json({ success: false, error: 'Không tìm thấy session' });
+        }
+
+        res.json({
+            success: true,
+            sessionId,
+            sessionName: session.sessionName,
+            message: 'Đổi tên session thành công'
+        });
+    } catch (err) {
+        console.error('Lỗi khi đổi tên session:', err);
+        res.status(500).json({ success: false, error: 'Không thể đổi tên session' });
+    }
+});
+
+// API xóa session
+app.delete('/sessions/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        const deletedSession = await ChatHistory.findOneAndDelete({ sessionId });
+
+        if (!deletedSession) {
+            return res.status(404).json({ success: false, error: 'Không tìm thấy session' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Xóa session thành công'
+        });
+    } catch (err) {
+        console.error('Lỗi khi xóa session:', err);
+        res.status(500).json({ success: false, error: 'Không thể xóa session' });
+    }
+});
 //Lấy lịch sử chata
 app.get('/history', async (req, res) => {
     try {
-        const sessionId = req.ip || 'default-session';
+        const sessionId = req.query.sessionId;
         console.log('📖 Loading history for sessionId:', sessionId);
 
         if (!sessionId) return res.status(400).json({ error: 'Thiếu sessionId' });
@@ -239,7 +354,7 @@ app.get('/history', async (req, res) => {
 // Load guild docs
 async function loadGuildDocs() {
     const baseDir = path.join(__dirname, 'n8n_guilds');
-    const Rule = fs.readFileSync(path.join(baseDir, 'Rule'), 'utf-8');
+    const Rule = fs.readFileSync(path.join(baseDir, 'rulebuteng'), 'utf-8');
     return `Đây là quy tác trả lời:\n${Rule}.`
 }
 
@@ -249,10 +364,11 @@ loadGuildDocs().then(data => {
     console.log('✅ Loaded n8n guild docs');
 });
 
+//Xử lý tin nhắn
 app.post('/chat', upload.single('image'), async (req, res) => {
     try {
         const userPrompt = req.body.prompt || '';
-        const sessionId = req.ip || 'default-session';
+        const sessionId = req.body.sessionId
 
         let history = await ChatHistory.findOne({ sessionId });
         if (!history) {
@@ -267,7 +383,6 @@ app.post('/chat', upload.single('image'), async (req, res) => {
                 ]
             });
         }
-
         // Tạo user message với metadata
         let userMessage = {
             role: 'user',
@@ -347,7 +462,6 @@ app.post('/chat', upload.single('image'), async (req, res) => {
             fs.unlinkSync(req.file.path); // Xóa file tạm sau khi đọc
         }
 
-
         // Thêm user message vào history
         history.messages.push(userMessage);
 
@@ -365,19 +479,41 @@ app.post('/chat', upload.single('image'), async (req, res) => {
             {
                 type: "function",
                 function: {
-                    name: "searchPinecone",
-                    description: "Tra cứu dữ liệu n8n đã nhúng trong Pinecone",
+                    name: "searchAPI",
+                    description: "Tra cứu những api đã tạo trong thư viên api",
                     parameters: {
                         type: "object",
                         properties: {
                             query: {
                                 type: "string",
-                                description: "Câu hỏi hoặc từ khóa để tìm trong Pinecone"
+                                description: "Câu hỏi hoặc từ khóa để tìm trong thư viện API"
                             },
                             topK: {
                                 type: "number",
                                 description: "Số lượng kết quả cần lấy",
                                 default: 5
+                            }
+                        },
+                        required: ["query"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "searchNode",
+                    description: "Tra cứu thông tin node trong Weaviate",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            query: {
+                                type: "string",
+                                description: "Chỉ cần dùng tên của node đá ví dụ HTTP Request"
+                            },
+                            topK: {
+                                type: "number",
+                                description: "Số lượng kết quả cần lấy",
+                                default: 10
                             }
                         },
                         required: ["query"]
@@ -393,65 +529,244 @@ app.post('/chat', upload.single('image'), async (req, res) => {
                 role: msg.role,
                 content: msg.content
             })),
-            tools: tools,
+            tools: tools,//set tool
             max_completion_tokens: 3000
         });
         //Respond của openai, có thể là trả lời trực tiếp hoặc call toool
         const choice = chatCompletion.choices[0].message;
-        //check xem ai tìm cái gì, hoặc trả lời cái gì
-        console.log("ai đi tìm mấy cái này", JSON.stringify(choice, null, 2));
-
 
         //nếu dùng tool
         let aiMessage;
+
         if (choice.tool_calls) {
-            console.log('ai đã dùng tool')
+            console.log("AI đã dùng tool:", JSON.stringify(choice, null, 2));
+
+            const toolResponses = [];
+
             for (const toolCall of choice.tool_calls) {
-                if (toolCall.function?.name === "searchPinecone") {
-                    const args = JSON.parse(toolCall.function.arguments);
-                    const embeddingQuery = await openai.embeddings.create({
-                        model: "text-embedding-3-small",
-                        input: args.query,
+                const args = JSON.parse(toolCall.function.arguments);
+                let toolData = "";
+
+                if (toolCall.function.name === "searchNode") {
+                    console.log('AI chọn tool searchNode');
+                    const graphqlQuery = {
+                        query: `{
+                                Get {
+                                    N8N_Nodes(
+                                        limit: ${parseInt(args.topK)},
+                                        where: {
+                                            operator: Or,
+                                            operands: [{
+                                                operator: Like,
+                                                path: ["node_Name"],
+                                                valueText: "*${args.query}*"
+                                            }]
+                                        }
+                                    ) {
+                                        node_Name
+                                        operator
+                                        jsonCode
+                                        description
+                                        method
+                                        publishedDate
+                                        _additional { id }
+                                    }
+                                }
+                            }`
+                    };
+
+                    const res = await fetch("http://localhost:8080/v1/graphql", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(graphqlQuery),
                     });
-                    const vector = embeddingQuery.data[0].embedding;
 
-                    const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
-                    const namespace = pc.index(process.env.INDEX_NAME, process.env.INDEX_HOST).namespace(process.env.namespace);
-
-                    const pineconeRes = await namespace.query({
-                        vector,
-                        topK: args.topK || 10,
-                        includeMetadata: true
-                    });
-
-                    //check xem ai tìm đc cái gì
-                    console.log("Pinecone matches:", JSON.stringify(pineconeRes.matches, null, 2));
-
-                    const PineconeData = pineconeRes.matches
-                        ?.map(m => m.metadata.text || "")
-                        .filter(Boolean)
-                        .join("\n\n");
-
-                    const SupMessages = [
-                        ...limitedMessages,
-                        choice, // assistant message có tool_calls
-                        {
-                            role: "tool",
-                            tool_call_id: choice.tool_calls[0].id,
-                            content: PineconeData
-                        }
-                    ];
-
-                    //Gọi lại AI để trả lời ra màn
-                    const followUp = await openai.chat.completions.create({
-                        model: "gpt-4.1-mini-2025-04-14",
-                        messages: SupMessages,
-                    });
-                    aiMessage = followUp.choices[0].message;//trả lời dùng tool
+                    const data = await res.json();
+                    const matches = data?.data?.Get?.N8N_Nodes || [];
+                    toolData = matches.map(m => `
+                            Node: ${m.node_Name}
+                            Operator: ${m.operator}
+                            Mô tả: ${m.description}
+                            Method: ${m.method}
+                            Json Code: ${m.jsonCode}
+            `).join("\n\n");
                 }
+                else if (toolCall.function.name === "searchAPI") {
+                    console.log('AI chọn tool searchAPI');
+                    const graphqlQuery = {
+                        query: `{
+                                Get {
+                                    API_LIBRARY(
+                                        limit: ${parseInt(args.topK)},
+                                        where: {
+                                            operator: Or,
+                                            operands: [{
+                                                operator: Like,
+                                                path: ["category"],
+                                                valueText: "*${args.query}*"
+                                            }]
+                                        }
+                                    ) {
+                                        api_Name
+                                        api_URL
+                                        description
+                                        parameter
+                                        method
+                                        category
+                                        publishedDate
+                                        _additional { id }
+                                    }
+                                }
+                            }`
+                    };
+
+                    const res = await fetch("http://localhost:8080/v1/graphql", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(graphqlQuery),
+                    });
+
+                    const data = await res.json();
+                    const matches = data?.data?.Get?.API_LIBRARY || [];
+                    toolData = matches.map(m => `
+                            API: ${m.api_Name}
+                            URL: ${m.api_URL}
+                            Mô tả: ${m.description}
+                            Parameter: ${m.parameter}
+                            Method: ${m.method}
+                            Category: ${m.category}
+                        `).join("\n\n");
+                }
+
+                toolResponses.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: toolData || "Không thấy kết quả phù hợp.",
+                });
+            }
+
+            const supMessages = [...limitedMessages, choice, ...toolResponses];
+
+            console.log("📨 Messages trước khi gọi followUp:", JSON.stringify(supMessages, null, 2));
+
+            //Gửi cho ai lần 1, nếu gọi tool thì tới if tiếp theo
+            const followUp = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: supMessages,
+                tools: tools,
+                max_completion_tokens: 3000
+            });
+
+            //Vẫn gọi thì làm tiếp
+            if (followUp.choices[0].message.tool_calls) {
+                console.log("⚠️ AI gọi tool lần 2, đang xử lý...");
+
+                const secondToolResponses = [];
+                for (const toolCall of followUp.choices[0].message.tool_calls) {
+                    const args = JSON.parse(toolCall.function.arguments);
+                    let toolData = "";
+
+                    if (toolCall.function.name === "searchNode") {
+                        console.log('AI chọn tool searchNode');
+                        const graphqlQuery = {
+                            query: `{
+                                Get {
+                                    N8N_Nodes(limit: 21) {
+                                        node_Name
+                                        operator
+                                        description
+                                        method
+                                        jsonCode
+                                        publishedDate
+                                        _additional { id }
+                                    }
+                                }
+                            }`
+                        };
+
+                        const res = await fetch("http://localhost:8080/v1/graphql", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(graphqlQuery),
+                        });
+
+                        const data = await res.json();
+                        const matches = data?.data?.Get?.N8N_Nodes || [];
+                        toolData = matches.map(m => `
+                            Node: ${m.node_Name}
+                            Operator: ${m.operator}
+                            Mô tả: ${m.description}
+                            Json Code: ${m.jsonCode}
+                        `).join("\n\n");
+                    }
+                    else if (toolCall.function.name === "searchAPI") {
+                        console.log('AI chọn tool searchAPI');
+                        const graphqlQuery = {
+                            query: `{
+                                    Get {
+                                        API_LIBRARY(
+                                            limit: ${parseInt(args.topK)},
+                                            where: {
+                                                operator: Or,
+                                                operands: [{
+                                                    operator: Like,
+                                                    path: ["category"],
+                                                    valueText: "*${args.query}*"
+                                                }]
+                                            }
+                                        ) {
+                                            api_Name
+                                            api_URL
+                                            description
+                                            parameter
+                                            method
+                                            category
+                                            publishedDate
+                                            _additional { id }
+                                        }
+                                    }
+                                }`
+                        };
+
+                        const res = await fetch("http://localhost:8080/v1/graphql", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(graphqlQuery),
+                        });
+
+                        const data = await res.json();
+                        const matches = data?.data?.Get?.API_LIBRARY || [];
+                        toolData = matches.map(m => `
+                                    API: ${m.api_Name}
+                                    URL: ${m.api_URL}
+                                    Mô tả: ${m.description}
+                                    Parameter: ${m.parameter}
+                                    Method: ${m.method}
+                                    Category: ${m.category}
+                                `).join("\n\n");
+                    }
+
+                    secondToolResponses.push({
+                        role: "tool",
+                        tool_call_id: toolCall.id,
+                        content: toolData || "Không tìm thấy kết quả phù hợp.",
+                    });
+                }
+
+                const finalMessages = [...supMessages, followUp.choices[0].message, ...secondToolResponses];
+
+                const finalResponse = await openai.chat.completions.create({
+                    model: "gpt-4o-mini",
+                    messages: finalMessages,
+                    max_completion_tokens: 3000
+                });
+
+                aiMessage = finalResponse.choices[0].message;
+            } else {
+                aiMessage = followUp.choices[0].message;
             }
         } else {
-            aiMessage = choice;//trả lời không dùng tool
+            aiMessage = choice;
         }
 
         // XỬ LÝ AI RESPONSE: Extract JSON và convert thành Mermaid
@@ -474,7 +789,7 @@ app.post('/chat', upload.single('image'), async (req, res) => {
             content: aiMessage.content,
             metadata: {
                 detectedJsonBlocks: detectedJsonBlocks,
-                hasImage: false
+                hasImage: false,
             }
         };
 

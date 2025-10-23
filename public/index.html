@@ -14,7 +14,7 @@
   <script>
     mermaid.initialize({ startOnLoad: false });
   </script>
-  
+
   <style>
     body {
       background: #f4f4f4;
@@ -44,6 +44,54 @@
       color: #fff;
       padding: 16px;
       text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .session-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .session-selector {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      color: white;
+      padding: 6px 10px;
+      font-size: 14px;
+      min-width: 150px;
+    }
+
+    .session-selector option {
+      background: #007bff;
+      color: white;
+    }
+
+    .session-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      color: white;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .session-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .current-session {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 5px;
     }
 
     .chat-box {
@@ -95,7 +143,6 @@
       max-width: 100%;
       white-space: pre-wrap;
     }
-
 
     .chat-form {
       display: flex;
@@ -151,44 +198,187 @@
       line-height: 1.2;
     }
 
- .file-display {
-    margin-top: 8px;
-    background: #e3f2fd;
-    border: 1px solid #bbdefb;
-    border-radius: 8px;
-    padding: 10px 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: 300px;
-    transition: all 0.2s ease;
-}
+    .file-display {
+      margin-top: 8px;
+      background: #e3f2fd;
+      border: 1px solid #bbdefb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 300px;
+      transition: all 0.2s ease;
+    }
 
-.file-display:hover {
-    background: #bbdefb;
-}
+    .file-display:hover {
+      background: #bbdefb;
+    }
+
+    .session-name-input {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      color: white;
+      padding: 6px 10px;
+      font-size: 14px;
+      width: 200px;
+    }
+
+    .session-name-input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .close {
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close:hover {
+      color: #000;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .modal-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .modal-btn:hover {
+      background: #0056b3;
+    }
+
+    .modal-btn.secondary {
+      background: #6c757d;
+    }
+
+    .modal-btn.secondary:hover {
+      background: #545b62;
+    }
+
+    @media (max-width: 768px) {
+      .chat-header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .session-controls {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 
 <body>
   <div class="chat-container">
     <div class="chat-header">
-      <h2>AI Chatbot, để bán hẹ</h2>
-      <button type="button" id="goto" onclick="location.href='./n8n.html'">đi tới trang n8n.html</button>
+      <div class="Menu"><a href="main.html" style="color: white; text-decoration: none;">
+        <i class="fa-solid fa-house"></i> Trang chủ</a></div>
+        <div class="session-controls">
+          <button type="button" id="goto" class="session-btn" onclick="location.href='./n8n.html'">
+          Đi tới n8n.html
+        </button>
+      </div>
+      <div>
+        <h2>AI Chatbot, Hỗ trợ tạo n8n</h2>
+        <div class="current-session"><span id="currentSessionDisplay">Loading...</span></div>
+      </div>
+
+      <div class="session-controls">
+        <select id="sessionSelector" class="session-selector">
+          <option value="">Chọn session...</option>
+        </select>
+        <button id="newSessionBtn" class="session-btn">
+          <i class="fa-solid fa-plus"></i> Tạo mới
+        </button>
+        <button id="renameSessionBtn" class="session-btn">
+          <i class="fa-solid fa-edit"></i> Đổi tên
+        </button>
+        <button id="deleteSessionBtn" class="session-btn">
+          <i class="fa-solid fa-trash"></i> Xóa
+        </button>
+        <button type="button" id="goto" class="session-btn" onclick="location.href='./n8n.html'">
+          Đi tới n8n.html
+        </button>
+      </div>
     </div>
     <div id="chatBox" class="chat-box"></div>
     <form id="chatForm" class="chat-form">
       <textarea name="prompt" id="prompt" placeholder="Nhập tin nhắn..." rows="2" required></textarea>
       <label class="file-label">
-        <input type="file" name="image" id="imageInput"
-          accept="image/*, .pdf, .docx, .xlsx" style="display:none">
+        <input type="file" name="image" id="imageInput" accept="image/*, .pdf, .docx, .xlsx" style="display:none">
         <span><i class="fa-solid fa-folder-open"></i></span>
       </label>
       <button type="submit">Gửi</button>
     </form>
   </div>
 
-  <script src="./chat.js" defer></script>
-</body>
+  <!-- Khung tạo session mới -->
+  <div id="newSessionModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Tạo Đoạn Chat Mới</h3>
+        <span class="close" data-modal="newSessionModal">&times;</span>
+      </div>
+      <input type="text" id="newSessionName" class="modal-input" placeholder="Nhập tên đoạn chat">
+      <button id="confirmNewSession" class="modal-btn">Tạo</button>
+      <button class="modal-btn secondary" data-modal="newSessionModal">Hủy</button>
+    </div>
+  </div>
 
-</html>
+  <!-- Khung đổi tên session -->
+  <div id="renameSessionModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Đổi Tên Đoạn Chat</h3>
+        <span class="close" data-modal="renameSessionModal">&times;</span>
+      </div>
+      <input type="text" id="renameSessionName" class="modal-input" placeholder="Nhập tên mới">
+      <button id="confirmRename" class="modal-btn">Lưu</button>
+      <button class="modal-btn secondary" data-modal="renameSessionModal">Hủy</button>
+    </div>
+  </div>
+  <script src="./chat.js" defer></script>

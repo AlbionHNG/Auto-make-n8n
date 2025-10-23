@@ -11,7 +11,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-
 //Làm sạch baseUrl
 function sanitizeBaseUrl(baseUrl) {
     let clean = baseUrl.trim();
@@ -36,7 +35,6 @@ router.post("/api/n8n/test", async (req, res) => {
       });
     }
 
-    // 
     const cleanBaseUrl = sanitizeBaseUrl(baseUrl);
     
     const apiUrl = `${cleanBaseUrl}/api/v1/workflows`;
@@ -163,11 +161,12 @@ router.post("/api/n8n/workflows", async (req, res) => {
     
     const createdWorkflow = response.data;
     console.log("Workflow created successfully:", createdWorkflow?.id);
-
+    let newUrl = `${baseUrl}/workflow/${createdWorkflow.id}`
     res.json({
       success: true,
       data: createdWorkflow,
-      message: 'Workflow created successfully'
+      message: 'Workflow created successfully',
+      id: newUrl,
     });
 
   } catch (error) {

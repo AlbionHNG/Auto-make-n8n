@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weaviate Management</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-connected .status-dot {
+            background: #28a745;
+        }
+
+        .status-disconnected .status-dot {
+            background: #dc3545;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .sidebar, .content-area {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .sidebar h2, .content-area h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        .nav-button {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-button.active {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+
+        .article-card {
+            background: #f8f9ff;
+            border: 1px solid #e1e8ed;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .article-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .article-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .article-meta {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .article-meta span {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        .article-content {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .article-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .sidebar, .content-area {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚀 Weaviate Management</h1>
+            <div id="connectionStatus" class="status-indicator status-disconnected">
+                <span class="status-dot"></span>
+                <span>Checking connection...</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar Navigation -->
+            <div class="sidebar">
+                <h2>📋 Navigation</h2>
+                <button class="nav-button active" onclick="showSection('dashboard')">📊 Dashboard</button>
+                <button class="nav-button" onclick="showSection('articles')">📄 View Articles</button>
+                <button class="nav-button" onclick="showSection('create')">✏️ Create Article</button>
+                <button class="nav-button" onclick="showSection('search')">🔍 Search Articles</button>
+                <button class="nav-button" onclick="showSection('batch')">📦 Batch Import</button>
+                <button class="nav-button" onclick="showSection('schema')">🏗️ Schema Info</button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <div id="messages"></div>
+
+                <!-- Dashboard Section -->
+                <div id="dashboard" class="section">
+                    <h2>📊 Dashboard</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalArticles">-</div>
+                            <div class="stat-label">Total Articles</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="connectionTime">-</div>
+                            <div class="stat-label">Response Time</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="initializeSchema()">🏗️ Initialize Schema</button>
+                    <button class="btn btn-secondary" onclick="refreshStats()">🔄 Refresh Stats</button>
+                </div>
+
+                <!-- Articles List Section -->
+                <div id="articles" class="section hidden">
+                    <h2>📄 Articles</h2>
+                    <div class="search-bar">
+                        <input type="text" id="quickSearch" placeholder="Quick search articles..." onkeyup="quickSearchArticles(event)">
+                        <button class="btn btn-primary" onclick="loadArticles()">🔄 Refresh</button>
+                    </div>
+                    <div id="articlesList">
+                        <div class="loading">Loading articles...</div>
+                    </div>
+                </div>
+
+                <!-- Create Article Section -->
+                <div id="create" class="section hidden">
+                    <h2>✏️ Create New Article</h2>
+                    <form id="createForm" onsubmit="createArticle(event)">
+                        <div class="form-group">
+                            <label for="title">Title *</label>
+                            <input type="text" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="author">Author</label>
+                            <input type="text" id="author" name="author" placeholder="Anonymous">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" name="category">
+                                <option value="General">General</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Science">Science</option>
+                                <option value="Business">Business</option>
+                                <option value="Lifestyle">Lifestyle</option>
+                                <option value="Education">Education</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="tags">Tags (comma separated)</label>
+                            <input type="text" id="tags" name="tags" placeholder="javascript, nodejs, api">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="content">Content *</label>
+                            <textarea id="content" name="content" required placeholder="Enter article content..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">💾 Create Article</button>
+                        <button type="reset" class="btn btn-secondary">🔄 Reset Form</button>
+                    </form>
+                </div>
+
+                <!-- Search Section -->
+                <div id="search" class="section hidden">
+                    <h2>🔍 Search Articles</h2>
+                    <form id="searchForm" onsubmit="searchArticles(event)">
+                        <div class="form-group">
+                            <label for="searchQuery">Search Query</label>
+                            <input type="text" id="searchQuery" name="searchQuery" placeholder="Enter search terms...">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="filterCategory">Filter by Category</label>
+                            <select id="filterCategory" name="filterCategory">
+                                <option value="">All Categories</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Science">Science</option>
+                                <option value="Business">Business</option>
+                                <option value="Lifestyle">Lifestyle</option>
+                                <option value="Education">Education</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="filterAuthor">Filter by Author</label>
+                            <input type="text" id="filterAuthor" name="filterAuthor" placeholder="Author name...">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">🔍 Search</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearSearch()">🗑️ Clear</button>
+                    </form>
+                    
+                    <div id="searchResults" class="hidden">
+                        <h3>Search Results</h3>
+                        <div id="searchResultsList"></div>
+                    </div>
+                </div>
+
+                <!-- Batch Import Section -->
+                <div id="batch" class="section hidden">
+                    <h2>📦 Batch Import</h2>
+                    <p>Import multiple articles using JSON format:</p>
+                    <div class="form-group">
+                        <label for="batchData">JSON Data</label>
+                        <textarea id="batchData" rows="15" placeholder='[
+  {
+    "title": "Article 1",
+    "content": "Content of article 1...",
+    "author": "Author Name",
+    "category": "Technology",
+    "tags": ["tag1", "tag2"]
+  },
+  {
+    "title": "Article 2",
+    "content": "Content of article 2...",
+    "author": "Another Author",
+    "category": "Science",
+    "tags": ["science", "research"]
+  }
+]'></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="batchImport()">📦 Import Articles</button>
+                    <button class="btn btn-secondary" onclick="loadSampleData()">📝 Load Sample Data</button>
+                </div>
+
+                <!-- Schema Section -->
+                <div id="schema" class="section hidden">
+                    <h2>🏗️ Schema Information</h2>
+                    <button class="btn btn-primary" onclick="loadSchema()">🔄 Refresh Schema</button>
+                    <div id="schemaInfo">
+                        <div class="loading">Loading schema...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = '/api/weaviate';
+        let currentArticles = [];
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            checkConnection();
+            refreshStats();
+            loadArticles();
+        });
+
+        // Navigation
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.remove('hidden');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Load section-specific data
+            if (sectionName === 'articles') {
+                loadArticles();
+            } else if (sectionName === 'schema') {
+                loadSchema();
+            } else if (sectionName === 'dashboard') {
+                refreshStats();
+            }
+        }
+
+        // Utility functions
+        function showMessage(message, type = 'success') {
+            const messagesDiv = document.getElementById('messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = type;
+            messageEl.textContent = message;
+            messagesDiv.appendChild(messageEl);
+            
+            setTimeout(() => {
+                messageEl.remove();
+            }, 5000);
+        }
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await axios({
+                    url: `${API_BASE}${url}`,
+                    timeout: 10000,
+                    ...options
+                });
+                return response.data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error.response?.data?.error || error.message || 'Request failed';
+            }
+        }
+
+        // Connection check
+        async function checkConnection() {
+            try {
+                const startTime = Date.now();
+                const status = await makeRequest('/health');
+                const responseTime = Date.now() - startTime;
+                
+                const statusEl = document.getElementById('connectionStatus');
+                if (status.connected) {
+                    statusEl.className = 'status-indicator status-connected';
+                    statusEl.innerHTML = `
+                        <span class="status-dot"></span>
+                        <span>Connected to Weaviate ${status.version}</span>
+                    `;
+                    document.getElementById('connectionTime').textContent = responseTime + 'ms';
+                } else {
+                    statusEl.className = 'status-indicator status-disconnected';
+                    statusEl.innerHTML = `
+                        <span class="status-dot"></span>
+                        <span>Disconnected</span>
+                    `;
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('connectionStatus');
+                statusEl.className = 'status-indicator status-disconnected';
+                statusEl.innerHTML = `
+                    <span class="status-dot"></span>
+                    <span>Connection Error</span>
+                `;
+                showMessage(`Connection error: ${error}`, 'error');
+            }
+        }
+
+        // Initialize schema
+        async function initializeSchema() {
+            try {
+                const result = await makeRequest('/init', { method: 'POST' });
+                showMessage(result.message);
+            } catch (error) {
+                showMessage(`Schema initialization failed: ${error}`, 'error');
+            }
+        }
+
+        // Refresh stats
+        async function refreshStats() {
+            try {
+                const stats = await makeRequest('/articles/stats');
+                document.getElementById('totalArticles').textContent = stats.totalArticles;
+            } catch (error) {
+                document.getElementById('totalArticles').textContent = '-';
+                showMessage(`Failed to load stats: ${error}`, 'error');
+            }
+        }
+
+        // Load articles
+        async function loadArticles() {
+            try {
+                const result = await makeRequest('/articles?limit=50');
+                currentArticles = result.articles;
+                displayArticles(currentArticles);
+            } catch (error) {
+                document.getElementById('articlesList').innerHTML = 
+                    `<div class="error">Failed to load articles: ${error}</div>`;
+            }
+        }
+
+        // Display articles
+        function displayArticles(articles) {
+            const container = document.getElementById('articlesList');
+            
+            if (articles.length === 0) {
+                container.innerHTML = '<div class="loading">No articles found</div>';
+                return;
+            }
+
+            container.innerHTML = articles.map(article => `
+                <div class="article-card">
+                    <h3>${article.title}</h3>
+                    <div class="article-meta">
+                        <span>👤 ${article.author}</span>
+                        <span>📂 ${article.category}</span>
+                        <span>📅 ${new Date(article.publishedDate).toLocaleDateString()}</span>
+                    </div>
+                    <div class="article-content">
+                        ${article.content.substring(0, 200)}${article.content.length > 200 ? '...' : ''}
+                    </div>
+                    ${article.tags && article.tags.length > 0 ? 
+                        `<div style="margin-bottom: 15px;">
+                            ${article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>` : ''
+                    }
+                    <div class="article-actions">
+                        <button class="btn btn-danger" onclick="deleteArticle('${article.id}')">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Quick search
+        function quickSearchArticles(event) {
+            if (event.key === 'Enter') {
+                const query = event.target.value.toLowerCase();
+                if (query) {
+                    const filtered = currentArticles.filter(article => 
+                        article.title.toLowerCase().includes(query) ||
+                        article.content.toLowerCase().includes(query) ||
+                        article.author.toLowerCase().includes(query)
+                    );
+                    displayArticles(filtered);
+                } else {
+                    displayArticles(currentArticles);
+                }
+            }
+        }
+
+        // Create article
+        async function createArticle(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const article = {
+                title: formData.get('title'),
+                content: formData.get('content'),
+                author: formData.get('author') || 'Anonymous',
+                category: formData.get('category'),
+                tags: formData.get('tags') ? formData.get('tags').split(',').map(tag => tag.trim()) : []
+            };
+
+            try {
+                await makeRequest('/articles', {
+                    method: 'POST',
+                    data: article
+                });
+                
+                showMessage('Article created successfully!');
+                event.target.reset();
+                refreshStats();
+            } catch (error) {
+                showMessage(`Failed to create article: ${error}`, 'error');
+            }
+        }
+
+        // Search articles
+        async function searchArticles(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const params = new URLSearchParams();
+            
+            if (formData.get('searchQuery')) params.append('q', formData.get('searchQuery'));
+            if (formData.get('filterCategory')) params.append('category', formData.get('filterCategory'));
+            if (formData.get('filterAuthor')) params.append('author', formData.get('filterAuthor'));
+
+            try {
+                const result = await makeRequest(`/articles/search?${params}`);
+                displaySearchResults(result.articles);
+                document.getElementById('searchResults').classList.remove('hidden');
+            } catch (error) {
+                showMessage(`Search failed: ${error}`, 'error');
+            }
+        }
+
+        // Display search results
+        function displaySearchResults(articles) {
+            const container = document.getElementById('searchResultsList');
+            displayArticles.call({ id: 'searchResultsList' }, articles);
+            // Copy the display logic but target search results container
+            if (articles.length === 0) {
+                container.innerHTML = '<div class="loading">No results found</div>';
+                return;
+            }
+            container.innerHTML = document.getElementById('articlesList').innerHTML;
+        }
+
+        // Clear search
+        function clearSearch() {
+            document.getElementById('searchForm').reset();
+            document.getElementById('searchResults').classList.add('hidden');
+        }
+
+        // Delete article
+        async function deleteArticle(id) {
+            if (!confirm('Are you sure you want to delete this article?')) return;
+
+            try {
+                await makeRequest(`/articles/${id}`, { method: 'DELETE' });
+                showMessage('Article deleted successfully!');
+                loadArticles();
+                refreshStats();
+            } catch (error) {
+                showMessage(`Failed to delete article: ${error}`, 'error');
+            }
+        }
+
+        // Batch import
+        async function batchImport() {
+            const data = document.getElementById('batchData').value.trim();
+            
+            if (!data) {
+                showMessage('Please enter JSON data', 'error');
+                return;
+            }
+
+            try {
+                const articles = JSON.parse(data);
+                await makeRequest('/articles/batch', {
+                    method: 'POST',
+                    data: { articles }
+                });
+                
+                showMessage(`Successfully imported ${articles.length} articles!`);
+                document.getElementById('batchData').value = '';
+                refreshStats();
+            } catch (error) {
+                if (error.includes('JSON')) {
+                    showMessage('Invalid JSON format', 'error');
+                } else {
+                    showMessage(`Batch import failed: ${error}`, 'error');
+                }
+            }
+        }
+
+        // Load sample data
+        function loadSampleData() {
+            const sampleData = [
+                {
+                    title: "Introduction to Machine Learning",
+                    content: "Machine learning is a subset of artificial intelligence that focuses on algorithms that can learn from and make predictions on data...",
+                    author: "John Smith",
+                    category: "Technology",
+                    tags: ["machine-learning", "ai", "data-science"]
+                },
+                {
+                    title: "The Future of Web Development",
+                    content: "Web development continues to evolve with new frameworks, tools, and methodologies emerging constantly...",
+                    author: "Sarah Johnson",
+                    category: "Technology",
+                    tags: ["web-development", "javascript", "frontend"]
+                },
+                {
+                    title: "Sustainable Business Practices",
+                    content: "Companies are increasingly adopting sustainable practices to reduce their environmental impact and meet consumer demands...",
+                    author: "Mike Davis",
+                    category: "Business",
+                    tags: ["sustainability", "business", "environment"]
+                }
+            ];
+            
+            document.getElementById('batchData').value = JSON.stringify(sampleData, null, 2);
+        }
+
+        // Load schema
+        async function loadSchema() {
+            try {
+                const schema = await makschemaInfoeRequest('/schema');
+                displaySchema(schema);
+            } catch (error) {
+                document.getElementById('').innerHTML = 
+                    `<div class="error">Failed to load schema: ${error}</div>`;
+            }
+        }
+
+        // Display schema
+        function displaySchema(schema) {
+            const container = document.getElementById('schemaInfo');
+            
+            if (!schema.classes || schema.classes.length === 0) {
+                container.innerHTML = '<div class="loading">No schema classes found. Initialize schema first.</div>';
+                return;
+            }
+
+            container.innerHTML = schema.classes.map(cls => `
+                <div class="article-card">
+                    <h3>📝 ${cls.name}</h3>
+                    <p><strong>Description:</strong> ${cls.description || 'No description'}</p>
+                    <p><strong>Properties:</strong> ${cls.properties}</p>
+                    <p><strong>Property Names:</strong> ${cls.propertyNames.join(', ')}</p>
+                </div>
+            `).join('');
+        }
+
+        // Auto-refresh connection status
+        setInterval(checkConnection, 30000);
+    </script>
+</body>
+</html>

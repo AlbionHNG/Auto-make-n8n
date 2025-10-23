@@ -3,26 +3,220 @@ const chatBox = document.getElementById('chatBox');
 const promptInput = document.getElementById('prompt');
 const imageInput = document.getElementById('imageInput');
 const jsonInput = document.getElementById('jsonInput');
+const sessionSelector = document.getElementById('sessionSelector');
+const currentSessionDisplay = document.getElementById('currentSessionDisplay');
+const newSessionBtn = document.getElementById('newSessionBtn');
+const renameSessionBtn = document.getElementById('renameSessionBtn');
+const deleteSessionBtn = document.getElementById('deleteSessionBtn');
+const newSessionModal = document.getElementById('newSessionModal');
+const renameSessionModal = document.getElementById('renameSessionModal');
+const newSessionNameInput = document.getElementById('newSessionName');
+const renameSessionNameInput = document.getElementById('renameSessionName');
 
 // Lấy hoặc tạo sessionId
-let sessionId = localStorage.getItem('chatSessionId');
-if (!sessionId) {
-    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('chatSessionId', sessionId);
+let sessions = [];
+let currentSessionId = localStorage.getItem('chatSessionId');
+
+//Lấy danh sách session và cập nhật giao diện
+async function loadSessions() {
+    try {
+        const res = await fetch('/sessions');
+        const data = await res.json();
+        //Nếu thành công thì nạp đống session có từ server vào danh sách hiện tại
+        if (data.success) {
+            sessions = data.sessions;// Ghi đè lên danh sách session hiện tại
+            updateSessionSelector();//Gọi cái này để update giao diện
+
+            // Tìm session trong mảng có sessionId khớp với currentSessionId
+            const sessionExists = sessions.find(s => s.sessionId === currentSessionId);
+
+            if (!currentSessionId || !sessionExists) {
+                // Nếu chưa có session hoặc session không tồn tại
+                if (sessions.length > 0) {
+                    // Gán cái session hiện tại là cái đầu tiên lấy đc trong db
+                    currentSessionId = sessions[0].sessionId;
+                    localStorage.setItem('chatSessionId', currentSessionId);
+                } else {
+                    // Tạo session mới nếu chưa có session nào
+                    await createNewSession('Chat đầu tiên', false);
+                    return;
+                }
+            }
+
+            updateCurrentSessionDisplay();//Load cái session hiện tài 
+            updateSessionSelector(); // Update lại để highlight session hiện tại
+        }
+    } catch (err) {
+        console.error('Lỗi khi load sessions:', err);
+        // Nếu lỗi, tạo session mặc định
+        currentSessionDisplay.textContent = 'Không thể tải session';
+    }
 }
 
-//LOAD DOM
-window.addEventListener('DOMContentLoaded', async () => {
+// Update chọn session/tạo danh sách session dropdown
+function updateSessionSelector() {
+    // Reset lại dropdown với option là mặc định
+    sessionSelector.innerHTML = '<option value="">Chọn đoạn chat...</option>';
+    //duyệt từng session một
+    sessions.forEach(session => {
+        const option = document.createElement('option');
+        option.value = session.sessionId;
+        option.textContent = `${session.sessionName}`;
+        //So sánh xem sessionId nào trùng với sessionId hiện tại thì chọn nó
+        if (session.sessionId === currentSessionId) {
+            option.selected = true;
+        }
+        //Chọn cái thằng trùng rồi thêm vào selector
+        sessionSelector.appendChild(option);
+    });
+}
+
+// Hàm update xem giờ là session nào
+function updateCurrentSessionDisplay() {
+    const currentSession = sessions.find(s => s.sessionId === currentSessionId);// Tìm session trong mảng có sessionId khớp với currentSessionId
+    if (currentSession) {//nếu có tòn tại
+        currentSessionDisplay.textContent = `${currentSession.sessionName} - Số tin nhắn(${currentSession.messageCount})`;//Hiện thị lên display
+    } else {
+        currentSessionDisplay.textContent = 'Loading...';//còn lỗi thì đang load
+    }
+}
+
+// tạo session mới
+async function createNewSession(sessionName = null, showAlert = true) {
+    try {
+        const res = await fetch('/sessions/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sessionName: sessionName//Gửi cái Name = null :v
+            })
+        });
+        //Đợi api gửi data
+        const data = await res.json();
+        //Nếu ok
+        if (data.success) {
+            // Gán id hiện tại là ai mới từ data
+            currentSessionId = data.sessionId;
+            localStorage.setItem('chatSessionId', currentSessionId);//Lưu id vào local
+
+            // Tải lại danh sách session từ server và cập nhật giao diện
+            await loadSessions();
+
+            // Xóa sạch nội dung khung chat trên UI
+            clearChatBox();
+
+            if (showAlert) {
+                alert('Tạo session mới thành công!');
+            }
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (err) {
+        console.error('Lỗi khi tạo session:', err);
+        if (showAlert) {
+            alert('Không thể tạo session mới');
+        }
+    }
+}
+
+// Đổi tên
+async function renameSession(sessionId, newName) {
+    try {
+        const res = await fetch(`/sessions/${sessionId}/rename`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                newName: newName //Gửi tên mới nhập(này lấy từ cái hàm bên dưới)
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            // Reload sessions để cập nhập lại display và selector
+            await loadSessions();
+            alert('Đổi tên session thành công!');
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (err) {
+        console.error('Lỗi khi đổi tên session:', err);
+        alert('Không thể đổi tên session');
+    }
+}
+
+// Delete session
+async function deleteSession(sessionId) {
+    if (!confirm('Bạn có chắc muốn xóa session này? Tất cả tin nhắn sẽ bị mất!')) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/sessions/${sessionId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            // Nếu xóa session hiện tại, chuyển sang session khác hoặc tạo mới
+            if (sessionId === currentSessionId) {
+                const remainingSessions = sessions.filter(s => s.sessionId !== sessionId);
+                if (remainingSessions.length > 0) {
+                    await switchToSession(remainingSessions[0].sessionId);
+                    await loadSessions();
+                    updateSessionSelector(sessionId);
+                } else {
+                    await createNewSession('Chat mới', false);
+                }
+            } else {
+                await loadSessions();
+                updateSessionSelector;
+            }
+
+            alert('Xóa session thành công!');
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (err) {
+        console.error('Lỗi khi xóa session:', err);
+        alert('Không thể xóa session');
+    }
+}
+
+// Hàm đổi session
+async function switchToSession(sessionId) {
+    if (sessionId === currentSessionId) {//Kiểm tra session
+        return;//Nếu trùng thì về ko chạy tiếp
+    }
+    else { 
+        currentSessionId = sessionId;//ko trùng thì gán lại cái hiện tại
+        localStorage.setItem('chatSessionId', sessionId);//Gán luôn vào local
+
+        // Xóa hết khung chat r đợi load
+        clearChatBox();
+        //Display session mới
+        updateCurrentSessionDisplay();
+        // Đợi thằng ở dưới load xong r đổi
+        await loadChatHistory(sessionId);
+    }
+}
+
+//Hàm load lịch sử
+async function loadChatHistory(sessionId) {//sessionid lấy từ thg ở trên
     try {
         const res = await fetch(`/history?sessionId=${sessionId}`);
         const data = await res.json();
         if (data.messages && Array.isArray(data.messages)) {
             for (const msg of data.messages) {
                 if (typeof msg.content === 'string') {
-                    // Truyền fileInfo từ server
                     appendMessage(
-                        msg.role, 
-                        msg.content,
+                        msg.role,
+                        msg.content,//gửi bình thường
                         null,
                         msg.metadata?.forceJsonData || null,
                         msg.metadata?.forceMermaidCode || null,
@@ -30,16 +224,15 @@ window.addEventListener('DOMContentLoaded', async () => {
                         msg.metadata?.fileInfo || null
                     );
                 } else if (Array.isArray(msg.content)) {
-                    // Nếu là tin nhắn có ảnh
                     const textPart = msg.content.find(p => p.type === 'text')?.text || '';
                     appendMessage(
-                        msg.role, 
-                        textPart, 
-                        null,  
+                        msg.role,
+                        textPart,//có file
+                        null,
                         msg.metadata?.forceJsonData || null,
                         msg.metadata?.forceMermaidCode || null,
                         msg.metadata?.detectedJsonBlocks || [],
-                        msg.metadata?.fileInfo || null 
+                        msg.metadata?.fileInfo || null
                     );
                 }
             }
@@ -47,31 +240,145 @@ window.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
         console.error('Không thể load lịch sử chat:', err);
     }
+}
+
+// Hàm xóa toàn bộ khung chat
+function clearChatBox() {
+    chatBox.innerHTML = '';
+}
+
+// Hiển thị khung chọn lựa
+function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'block';
+}
+//Ẩn khunng
+function hideModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Đổi session
+sessionSelector.addEventListener('change', function () {
+    if (this.value && this.value !== currentSessionId) {//this.value trỏ tới phần tử DOM gán event ở đây là cái dropdown
+        switchToSession(this.value);// this.value = sessionId từ dropdown
+    }
+});
+//Popup cái khung tạo đoạn chat mới
+newSessionBtn.addEventListener('click', function () {
+    newSessionNameInput.value = ''; // Clear input
+    showModal('newSessionModal');//Gọi hàm để hiển thị display = block
+});
+//Vẫn như trên nhưng là đổi tên
+renameSessionBtn.addEventListener('click', function () {
+    if (!currentSessionId) {
+        alert('Chưa có session nào được chọn');
+        return;
+    }
+    const currentSession = sessions.find(s => s.sessionId === currentSessionId);//Kiểm tra sessionId có tồn tại ko
+    if (currentSession) {
+        renameSessionNameInput.value = currentSession.sessionName;//Hiện thị tên session hiện tại
+        showModal('renameSessionModal');//Bật khung chọn
+    }
+});
+//Như trên nhưng là xóa
+deleteSessionBtn.addEventListener('click', function () {
+    if (!currentSessionId) {
+        alert('Chưa có session nào được chọn');
+        return;
+    }
+
+    deleteSession(currentSessionId);//Gọi hàm để xóa
 });
 
+// Xử lý hiển thị khung chọn
+document.getElementById('confirmNewSession').addEventListener('click', async function () {
+    const sessionName = newSessionNameInput.value.trim();
+    hideModal('newSessionModal');
+    await createNewSession(sessionName || null, true);
+});
+//Xử lý hiển thị khung đổi tên
+document.getElementById('confirmRename').addEventListener('click', async function () {
+    const newName = renameSessionNameInput.value.trim();
+    if (!newName) {
+        alert('Tên session không được để trống');
+        return;
+    }
+
+    hideModal('renameSessionModal');
+    await renameSession(currentSessionId, newName);
+});
+
+// Modal close handlers
+document.querySelectorAll('.close').forEach(closeBtn => {
+    closeBtn.addEventListener('click', function () {
+        const modalId = this.getAttribute('data-modal');
+        if (modalId) {
+            hideModal(modalId);
+        }
+    });
+});
+
+document.querySelectorAll('.modal-btn.secondary').forEach(cancelBtn => {
+    cancelBtn.addEventListener('click', function () {
+        const modalId = this.getAttribute('data-modal');
+        if (modalId) {
+            hideModal(modalId);
+        }
+    });
+});
+
+// Ẩn khung chọn của bất cứ đứa nào khi click xong
+window.addEventListener('click', function (event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+});
+
+// như trên nhưng là nhấn enter
+newSessionNameInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+        document.getElementById('confirmNewSession').click();
+    }
+});
+//Như trên nhưng là confim đổi tên
+renameSessionNameInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+        document.getElementById('confirmRename').click();
+    }
+});
+
+// Load lại cái cây
+window.addEventListener('DOMContentLoaded', async () => {
+    await loadSessions();
+
+    // Nếu có thì tải toàn bộ lịch sử cho cái session
+    if (currentSessionId) {
+        await loadChatHistory(currentSessionId);
+    }
+});
 // Preview trên thanh chat
 imageInput.addEventListener('change', function () {
-    let oldPreview = document.getElementById('file-preview');
-    if (oldPreview) oldPreview.remove();
-
+    let oldPreview = document.getElementById('file-preview');//preview file được chọn
+    if (oldPreview) oldPreview.remove();//chọn file mới thì xóa đi file cũ
+    //Preview file là ảnh
     if (imageInput.files && imageInput.files[0]) {
         if (imageInput.files[0].type.startsWith('image/')) {
-        const img = document.createElement('img');
-        img.id = 'file-preview';
-        img.src = URL.createObjectURL(imageInput.files[0]);
-        img.style.maxWidth = '120px';
-        img.style.marginLeft = '8px';
-        img.style.borderRadius = '6px';
-        img.style.border = '1px solid #ddd';
-        form.insertBefore(img, form.querySelector('button'));
-    } else if (imageInput.files[0].type === 'application/pdf' 
-        || imageInput.files[0].type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        || imageInput.files[0].type === 'text/plain'
-        || imageInput.files[0].type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-        const fileIcon = document.createElement('div');
-        fileIcon.id = 'file-preview';
-        fileIcon.textContent = `📄 ${imageInput.files[0].name}`;
-        fileIcon.style.cssText = `
+            const img = document.createElement('img');
+            img.id = 'file-preview';
+            img.src = URL.createObjectURL(imageInput.files[0]);
+            img.style.maxWidth = '120px';
+            img.style.marginLeft = '8px';
+            img.style.borderRadius = '6px';
+            img.style.border = '1px solid #ddd';
+            form.insertBefore(img, form.querySelector('button'));
+            //Preview file là document
+        } else if (imageInput.files[0].type === 'application/pdf'
+            || imageInput.files[0].type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            || imageInput.files[0].type === 'text/plain'
+            || imageInput.files[0].type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+            const fileIcon = document.createElement('div');
+            fileIcon.id = 'file-preview';
+            fileIcon.textContent = `📄 ${imageInput.files[0].name}`;
+            fileIcon.style.cssText = `
             background: #e3f2fd;
             color: #1976d2;
             padding: 8px 12px;
@@ -80,8 +387,9 @@ imageInput.addEventListener('change', function () {
             font-size: 14px;
             border: 1px solid #bbdefb;
         `;
-        form.insertBefore(fileIcon, form.querySelector('button'));
-    }}
+            form.insertBefore(fileIcon, form.querySelector('button'));
+        }
+    }
 });
 
 if (jsonInput) {
@@ -106,18 +414,18 @@ if (jsonInput) {
         }
     });
 }
-
+//xử lý khi nhấn submit gửi file
 form.addEventListener('submit', function () {
     let oldPreview = document.getElementById('file-preview');
-    if (oldPreview) oldPreview.remove();
-    
+    if (oldPreview) oldPreview.remove();//Xóa file trên khung chat đi sau khi gửi
+
     let oldJsonPreview = document.getElementById('json-preview');
     if (oldJsonPreview) oldJsonPreview.remove();
 });
 
 function cleanNodeType(nodeType) {
     if (!nodeType) return 'Unknown';
-    
+
     let cleanType = nodeType
         .replace(/^n8n-nodes-base\./, '')
         .replace(/^@n8n\//, '')
@@ -130,7 +438,7 @@ function cleanNodeType(nodeType) {
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
-    
+
     const typeMap = {
         'Http Request': 'HTTP Request',
         'Http Webhook': 'HTTP Webhook',
@@ -143,7 +451,7 @@ function cleanNodeType(nodeType) {
         'Manual Trigger': 'Manual',
         'Webhook': 'Webhook'
     };
-    
+
     return typeMap[cleanType] || cleanType;
 }
 
@@ -239,11 +547,11 @@ async function appendMessage(role, text, imageUrl, forceJsonData, forceMermaidCo
 
     // Xử lý text với Mermaid code blocks
     const parts = [];
-    const mermaidRegex = /```mermaid\s*([\s\S]*?)```/g;
+    const mermaidRegex = /```mermaid\s*([\s\S]*?)```/g;//Lọc mermaid xuất hiện trong chat
     let processedText = text;
 
     // Loại bỏ JSON blocks khỏi text để tránh hiển thị trùng lặp
-    if (detectedJsonBlocks.length > 0) {
+    if (detectedJsonBlocks.length > 0) {//kiểm tra có json ko
         let textOffset = 0;
         detectedJsonBlocks.forEach(block => {
             const adjustedStart = block.startIndex - textOffset;
@@ -284,12 +592,12 @@ async function appendMessage(role, text, imageUrl, forceJsonData, forceMermaidCo
         if (part.type === 'text') {
             const p = document.createElement('div');
             p.innerHTML = part.content.replace(/\n/g, '<br>');
-            msgDiv.appendChild(p);
+            msgDiv.appendChild(p);//hiển thị text
         } else if (part.type === 'mermaid') {
             const div = document.createElement('div');
             div.className = 'mermaid';
             div.textContent = part.content;
-            msgDiv.appendChild(div);
+            msgDiv.appendChild(div);//hiểm thị mermaid 
         }
     }
 
@@ -298,18 +606,23 @@ async function appendMessage(role, text, imageUrl, forceJsonData, forceMermaidCo
         // Hiển thị JSON
         const jsonDiv = document.createElement('div');
         jsonDiv.className = 'json-display';
-       jsonDiv.innerHTML = `
+        jsonDiv.innerHTML = `
     <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px; margin-top: 10px; position: relative;">
         <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">
-            📄 File Json N8N có thể copy:
+            📄 File Json N8N:
             <button onclick="copyJsonBlock(this)" 
                     style="float: right; padding: 2px 6px; font-size: 12px; cursor: pointer;">
                 Copy
             </button>
+            <button onclick="dowloadJsonBlock(this)"
+                    style="float: right; padding: 2px 6px; font-size: 12px; cursor: pointer;">
+                Dowload
+            </button>
         </div>
-        <pre style="background: #fff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; font-size: 12px; overflow-x: auto; max-height: 200px;">${JSON.stringify(jsonBlock.parsed, null, 2)}</pre>
+        <pre style="background: #fff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; font-size: 12px; overflow-x: auto; max-height: 200px;">
+        ${JSON.stringify(jsonBlock.parsed, null, 2)}</pre>
     </div>
-`;
+`;//
         msgDiv.appendChild(jsonDiv);
 
         // Hiển thị Mermaid 
@@ -335,31 +648,31 @@ async function appendMessage(role, text, imageUrl, forceJsonData, forceMermaidCo
         }
     }
 
-    // Hiển thị JSON data bắn lên
-    if (forceJsonData) {
-        const jsonDiv = document.createElement('div');
-        jsonDiv.className = 'json-display';
-        jsonDiv.innerHTML = `
-            <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px; margin-top: 10px;">
-                <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📄 JSON Workflow:</div>
-                <pre style="background: #fff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; font-size: 12px; overflow-x: auto; max-height: 200px;">${JSON.stringify(forceJsonData, null, 2)}</pre>
-            </div>
-        `;
-        msgDiv.appendChild(jsonDiv);
-    }
+    // // Hiển thị JSON data bắn lên
+    // if (forceJsonData) {
+    //     const jsonDiv = document.createElement('div');
+    //     jsonDiv.className = 'json-display';
+    //     jsonDiv.innerHTML = `
+    //         <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px; margin-top: 10px;">
+    //             <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📄 JSON Workflow:</div>
+    //             <pre style="background: #fff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; font-size: 12px; overflow-x: auto; max-height: 200px;">${JSON.stringify(forceJsonData, null, 2)}</pre>
+    //         </div>
+    //     `;
+    //     msgDiv.appendChild(jsonDiv);
+    // }
 
-    // Hiển thị Mermaid diagram bắn lên
-    if (forceMermaidCode) {
-        const mermaidDiv = document.createElement('div');
-        mermaidDiv.className = 'mermaid-display';
-        mermaidDiv.innerHTML = `
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 12px; margin-top: 10px;">
-                <div style="font-weight: bold; color: #856404; margin-bottom: 8px;">📄 Mermaid Diagram:</div>
-                <div class="mermaid">${forceMermaidCode}</div>
-            </div>
-        `;
-        msgDiv.appendChild(mermaidDiv);
-    }
+    // // Hiển thị Mermaid diagram bắn lên
+    // if (forceMermaidCode) {
+    //     const mermaidDiv = document.createElement('div');
+    //     mermaidDiv.className = 'mermaid-display';
+    //     mermaidDiv.innerHTML = `
+    //         <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 12px; margin-top: 10px;">
+    //             <div style="font-weight: bold; color: #856404; margin-bottom: 8px;">📄 Mermaid Diagram:</div>
+    //             <div class="mermaid">${forceMermaidCode}</div>
+    //         </div>
+    //     `;
+    //     msgDiv.appendChild(mermaidDiv);
+    // }
 
     //HIển thị ảnh
     if (fileInfo) {
@@ -402,25 +715,29 @@ async function appendMessage(role, text, imageUrl, forceJsonData, forceMermaidCo
     }, 0);
 }
 
+// Thay thế phần form 
 form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const prompt = promptInput.value.trim();
     if (!prompt && !(jsonInput && jsonInput.files[0]) && !(imageInput.files && imageInput.files[0])) return;
 
-    //Hiển thị file lên khung chat
+    if (!currentSessionId) {
+        alert('Chưa có session nào được chọn');
+        return;
+    }
+
+    // Hiển thị file lên khung chat
     let userFileInfo = null;
     if (imageInput.files && imageInput.files[0]) {
-        if (imageInput.files[0].type.startsWith('image/')) {
-            // Tạo fileInfo cho ảnh
+        if (imageInput.files[0].type.startsWith('image/')) {//Nếu file là ảnh
             userFileInfo = {
                 type: 'image',
                 name: imageInput.files[0].name,
                 size: imageInput.files[0].size,
                 base64Data: URL.createObjectURL(imageInput.files[0])
             };
-        } else {
-            // Tạo fileInfo cho document
+        } else {//Không phải ảnh thì nó sẽ là document
             userFileInfo = {
                 type: 'document',
                 name: imageInput.files[0].name,
@@ -437,42 +754,42 @@ form.addEventListener('submit', async (event) => {
         try {
             const fileContent = await readFileAsText(jsonInput.files[0]);
             uploadJsonData = JSON.parse(fileContent);
-            
+
             // Hiển thị tin nhắn user với JSON
             await appendMessage('user', prompt || 'Uploaded JSON workflow', null, uploadJsonData, null, [], null);
-            
+
             // Hiển thị loading message
             await appendMessage('ai', 'Đang chuyển đổi JSON thành Mermaid diagram...');
-            
+
             // Convert to Mermaid
             try {
                 uploadMermaidCode = await convertJsonToMermaid(uploadJsonData);
-                
+
                 // Xóa loading message
                 chatBox.removeChild(chatBox.lastChild);
-                
+
                 // Hiển thị kết quả
                 await appendMessage('ai', '✅ Chuyển đổi thành công! Dưới đây là JSON workflow và Mermaid diagram tương ứng:', null, uploadJsonData, uploadMermaidCode);
-                
+
             } catch (mermaidError) {
                 // Xóa loading message
                 chatBox.removeChild(chatBox.lastChild);
                 await appendMessage('ai', `❌ Lỗi khi chuyển đổi sang Mermaid: ${mermaidError.message}`, null, uploadJsonData);
             }
-            
+
         } catch (parseError) {
             await appendMessage('user', prompt || 'Uploaded file', null, null, null, [], userFileInfo);
             await appendMessage('ai', `❌ Lỗi khi đọc file JSON: ${parseError.message}`);
         }
     } else {
-        // xử lý tin nhắn bình thường
+        // Xử lý tin nhắn bình thường
         await appendMessage('user', prompt, null, null, null, [], userFileInfo);
-        
-        const formData = new FormData(form);
-        formData.append('sessionId', sessionId);
-        
-        await appendMessage('ai', 'Đang trả lời...');
 
+        const formData = new FormData(form);
+        formData.append('sessionId', currentSessionId); // Thêm sessionId
+       
+        await appendMessage('ai', 'Đang trả lời...');
+        //Gửi tin nhắn tới server
         try {
             const response = await fetch('/chat', {
                 method: 'POST',
@@ -480,10 +797,12 @@ form.addEventListener('submit', async (event) => {
             });
             const data = await response.json();
             chatBox.removeChild(chatBox.lastChild);
-
+            //Nhận data ai tạo
             if (data.reply) {
-                // Nếu có json
                 await appendMessage('ai', data.reply, null, null, null, data.metadata?.detectedJsonBlocks || []);
+
+                // Cập nhật session sau khi có tin nhắn mới
+                await loadSessions();
             } else {
                 await appendMessage('ai', 'AI không phản hồi.');
             }
@@ -509,19 +828,53 @@ function readFileAsText(file) {
         reader.readAsText(file);
     });
 }
-
-// Hàm copy JSON block
+//Hàm hỗ trợ copy
 function copyJsonBlock(button) {
     const pre = button.closest('.json-display').querySelector('pre');
     const text = pre.innerText;
     navigator.clipboard.writeText(text).then(() => {
-        button.textContent = "✅ Đã copy!";
+        button.textContent = "Đã copy!";
         setTimeout(() => button.textContent = "Copy", 1500);
     }).catch(err => {
         window.alert("Lỗi khi copy: " + err);
     });
 }
 
+//Hàm hỗ trợ dowload
+function dowloadJsonBlock(button) {
+    // tìm block json-display
+    const pre = button.closest('.json-display').querySelector('pre');
+    const text = pre.innerText;
+
+    try {
+        // parse lại từ text để thành object JSON chuẩn
+        const jsonObject = JSON.parse(text);
+
+        // stringify lại cho đẹp
+        const jsonString = JSON.stringify(jsonObject, null, 2);
+
+        // tạo blob
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        let Name;
+        const today = new Date().toString().split('T')[0];
+        const currentSession = sessions.find(s => s.sessionId === currentSessionId);
+        if(currentSession){
+           Name = currentSession.sessionName
+        }
+        // tạo link download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `worflow ${today}.json`;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        window.alert("❌ Lỗi khi download JSON: " + err.message);
+    }
+}
 
 // Nhấn Enter để gửi
 promptInput.addEventListener('keydown', function (e) {
