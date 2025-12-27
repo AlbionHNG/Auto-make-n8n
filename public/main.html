@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang chủ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 15px 20px;
+            background: black;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 1em;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: #555;
+        }
+
+        .icon {
+            margin-right: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .nav-link {
+                padding: 12px 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Trang chủ</h1>
+        <ul class="nav-list">
+            <li class="nav-item" id="chatbot">
+                <a href="index.html" class="nav-link">
+                    <span class="icon">💬</span>Chatbot RAG
+                </a>
+            </li>
+            <li class="nav-item" id="upload">
+                <a href="n8n.html" class="nav-link">
+                    <span class="icon">📁</span>Gửi file lên server
+                </a>
+            </li>
+            <li class="nav-item" id="ui-manager">
+                <a href="UI.html" class="nav-link">
+                    <span class="icon">⚙️</span>Weaviate & API Manager
+                </a>
+            </li>
+            <li class="nav-item" id="profile">
+                <a href="profile.html" class="nav-link">
+                    <span class="icon">👤</span>Profile
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+<script>
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    const token = getCookie('token');
+    console.log('Token from cookie:', token);
+    let userId = null;
+    async function getUserRole(token) {
+        try {
+            const roleRes = await fetch(`/api/checkRole`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: token })
+            });
+            const roleData = await roleRes.json();
+            console.log('User role data:', roleData);
+            if (!roleRes.ok) return null;
+            return roleData.role;
+        } catch (err) {
+            console.error(err);
+            return null;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const token = getCookie('token');
+        const uiMenu = document.getElementById('ui-manager');
+
+        if (uiMenu) uiMenu.style.display = 'none';
+
+        if (!token) return;
+
+        const role = await getUserRole(token);
+
+        if (role === 'admin') {
+            uiMenu.style.display = 'block';
+        }
+    });
+</script>
+
+</html>

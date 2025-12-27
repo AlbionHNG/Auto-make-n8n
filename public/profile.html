@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <title>Profile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .Menu {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: inline-block;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .Menu a {
+            color: #333;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .Menu i {
+            margin-right: 8px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .settings-section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .settings-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        button {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        .saved-info {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .saved-info strong {
+            color: #333;
+            font-size: 1em;
+        }
+
+        .token-display {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .workflow-item {
+            background: #f8f9fa;
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .workflow-item h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .workflow-item p {
+            margin: 8px 0;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .workflow-item a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        details {
+            margin: 15px 0;
+        }
+
+        summary {
+            cursor: pointer;
+            color: #0066cc;
+            font-weight: 600;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            overflow: auto;
+            max-height: 400px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 20px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .workflow-count {
+            background: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .settings-section {
+                padding: 20px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="Menu">
+            <a href="main.html">
+                <i class="fa-solid fa-house"></i> Trang chủ
+            </a>
+        </div>
+
+        <h1><i class="fa-solid fa-user-circle"></i> Hồ Sơ Người Dùng</h1>
+
+        <div class="settings-section">
+            <h2><i class="fa-solid fa-key"></i> Cài Đặt N8N</h2>
+            
+            <div class="input-group">
+                <label for="n8ntoken">N8N API Key</label>
+                <input type="text" id="n8ntoken" placeholder="Nhập n8n api key của bạn">
+                <button id="saveTokenBtn" style="margin-top: 10px;">
+                    <i class="fa-solid fa-save"></i> Lưu API Key
+                </button>
+            </div>
+
+            <div class="input-group">
+                <label for="http">N8N HTTP Link</label>
+                <input type="text" id="http" placeholder="Nhập vào link n8n của bạn">
+                <button id="saveHttpBtn" style="margin-top: 10px;">
+                    <i class="fa-solid fa-save"></i> Lưu HTTP Link
+                </button>
+            </div>
+
+            <div id="saved-token"></div>
+            <div id="saved-http"></div>
+        </div>
+
+        <div class="settings-section">
+            <h2><i class="fa-solid fa-diagram-project"></i> Workflows Đã Lưu</h2>
+            <div id="saved-workflow"></div>
+        </div>
+    </div>
+
+    <script>
+        //Hàm lấy user id
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+        const token = getCookie('token');
+        console.log('Token from cookie:', token);
+
+        let userId = null;
+        //Khởi tạo user
+        async function initUser() {
+            try {
+                const res = await fetch(`/api/verify-token/${token}`);
+                const data = await res.json();
+                if (res.ok) {
+                    userId = data.userId;
+                    return userId;
+                } else {
+                    console.error('Token verification failed:', data.error);
+                }
+            } catch (error) {
+                console.error('Error verifying token:', error);
+            }
+        }
+
+        const n8ntoken = document.getElementById('n8ntoken');
+        const http = document.getElementById('http');
+
+        //Lưu api key
+        async function saveToken() {
+            const userID = await initUser();
+            const apikey = n8ntoken.value;
+            const response = await fetch('/api/save-user-n8nKey', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userID: userID, apiKey: apikey }),
+            });
+            const data = await response.json();
+            getInfor();
+        }
+        //Lưu http link
+        async function saveHttp() {
+            const userID = await initUser();
+            const httpLink = http.value;
+            const response = await fetch('/api/save-n8n-url', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userID: userID, n8nUrl: httpLink }),
+            });
+            const data = await response.json();
+            getInfor();
+        }
+        document.getElementById('saveTokenBtn').addEventListener('click', saveToken);
+        document.getElementById('saveHttpBtn').addEventListener('click', saveHttp);
+
+        //Lấy token đã lưu
+        async function getInfor() {
+            const userID = await initUser();
+            const response = await fetch(`/api/user/${userID}/setting`);
+            const data = await response.json();
+
+            const tokenDiv = document.getElementById('saved-token');
+            const httpDiv = document.getElementById('saved-http');
+
+            if (data.n8nApiKey) {
+                tokenDiv.innerHTML = `
+                <div class="saved-info">
+                    <strong><i class="fa-solid fa-key"></i> N8N API KEY:</strong>
+                    <div class="token-display">
+                        <span id="token-value">••••••••••••••••</span>
+                    </div>
+                    <div class="btn-group">
+                        <button onclick="toggleToken('${data.n8nApiKey}')" class="btn-secondary">
+                            <i class="fa-solid fa-eye"></i> Hiện/Ẩn
+                        </button>
+                        <button onclick="copyToClipboard('${data.n8nApiKey}', this)" class="btn-secondary">
+                            <i class="fa-solid fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            `;
+            } else {
+                tokenDiv.innerHTML = '<div class="empty-state">Chưa có n8n Token được lưu.</div>';
+            }
+
+            if (data.n8nBaseUrl) {
+                httpDiv.innerHTML = `
+                <div class="saved-info">
+                    <strong><i class="fa-solid fa-link"></i> N8N HTTP:</strong>
+                    <div class="token-display">
+                        ${data.n8nBaseUrl}
+                    </div>
+                    <button onclick="copyToClipboard('${data.n8nBaseUrl}', this)" class="btn-secondary">
+                        <i class="fa-solid fa-copy"></i> Copy
+                    </button>
+                </div>
+            `;
+            } else {
+                httpDiv.innerHTML = '<div class="empty-state">Chưa có n8n HTTP được lưu.</div>';
+            }
+        }
+
+        let tokenVisible = false;
+        //Hàm hiện/ẩn key
+        function toggleToken(token) {
+            const tokenValue = document.getElementById('token-value');
+            tokenVisible = !tokenVisible;
+
+            if (tokenVisible) {
+                tokenValue.textContent = token;
+            } else {
+                tokenValue.textContent = '••••••••••••••••';
+            }
+        }
+        //Hàm copy
+        function copyToClipboard(text, buttonElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = buttonElement.innerHTML;
+                buttonElement.innerHTML = '<i class="fa-solid fa-check"></i> Đã copy!';
+                buttonElement.disabled = true;
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.disabled = false;
+                }, 1000);
+            }).catch(err => {
+                console.error('Lỗi copy:', err);
+            });
+        }
+        //lấy workflow đã lưu
+        async function getWorkflow() {
+            try {
+                const userID = await initUser();
+                const response = await fetch(`/api/get-n8n-data?userID=${userID}`);
+                const data = await response.json();
+                const container = document.getElementById('saved-workflow');
+                //Hiển thị workflow
+                if (response.ok && data.workflows && data.workflows.length > 0) {
+                    let workflowInfo = `<div class="workflow-count"><i class="fa-solid fa-check-circle"></i> Đã lưu ${data.count} workflows</div>`;
+
+                    data.workflows.forEach((item, index) => {
+                        workflowInfo += `
+                        <div class="workflow-item">
+                            <h4><i class="fa-solid fa-diagram-project"></i> Workflow #${index + 1}</h4>
+                            <p><strong>Tên workflow:</strong> ${item.workflowName || 'Chưa đặt tên'}</p>
+                            <p><strong>Tới từ đoạn chat:</strong> ${item.sessionName || 'Không có tên'}</p>
+                            <p><strong>Link n8n:</strong> 
+                                ${item.url ? `<a href="${item.url}" target="_blank">${item.url}</a>` : 'Chưa có link'}
+                            </p>
+                            <p><strong>Mô tả:</strong> ${item.description || 'Chưa có mô tả'}</p>
+                            <p><strong>Tạo lúc:</strong> ${item.createdAt}</p>
+                            <details>
+                                <summary><i class="fa-solid fa-code"></i> Xem chi tiết workflow</summary>
+                                <pre>${JSON.stringify(item.workflow, null, 2)}</pre>
+                            </details>
+                            
+                            <button onclick="deleteWorkflow('${item.Id}')" class="btn-danger" style="margin-top: 15px;">
+                                <i class="fa-solid fa-trash"></i> Xóa workflow này
+                            </button>
+                        </div>
+                    `;
+                    });
+
+                    container.innerHTML = workflowInfo;
+
+                } else {
+                    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-folder-open"></i><br>Chưa có workflow nào được lưu.</div>';
+                }
+
+            } catch (error) {
+                console.error('Lỗi khi lấy workflow:', error);
+                document.getElementById('saved-workflow').innerHTML =
+                    '<div class="empty-state" style="color: red;"><i class="fa-solid fa-exclamation-triangle"></i><br>Lỗi khi tải workflows</div>';
+            }
+        }
+
+        async function deleteWorkflow(workflowId) {
+            if (!confirm('Bạn có chắc chắn muốn xóa workflow này?')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/delete-n8n/${workflowId}`, {
+                    method: 'DELETE',
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Đã xóa workflow thành công!');
+                    getWorkflow();
+                } else {
+                    alert(`Lỗi khi xóa workflow: ${data.message}`);
+                }
+            } catch (error) {
+                console.error('Lỗi khi xóa workflow:', error);
+                alert('Lỗi khi xóa workflow. Vui lòng thử lại sau.');
+            }
+        }
+        window.addEventListener('DOMContentLoaded', async () => {
+            getInfor();
+            getWorkflow();
+        });
+
+    </script>
+</body>
+
+</html>

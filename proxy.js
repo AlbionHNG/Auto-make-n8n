@@ -11,38 +11,35 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-
 //Làm sạch baseUrl
 function sanitizeBaseUrl(baseUrl) {
-    let clean = baseUrl.trim();
-      if (!clean.startsWith('http')) 
-      {
-        clean = `http://${clean}`;
-      }
-    return clean.replace(/\/$/, '');
-    }
+  let clean = baseUrl.trim();
+  if (!clean.startsWith('http')) {
+    clean = `http://${clean}`;
+  }
+  return clean.replace(/\/$/, '');
+}
 
 // endpoint để test kết nối với n8n
 router.post("/api/n8n/test", async (req, res) => {
   try {
     const { apiKey, baseUrl } = req.body;
-    
+
     console.log("Test connection request:", { baseUrl, hasApiKey: !!apiKey });
-    
+
     if (!apiKey || !baseUrl) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: "Thiếu apiKey hoặc baseUrl" 
+        error: "Thiếu apiKey hoặc baseUrl"
       });
     }
 
-    // 
     const cleanBaseUrl = sanitizeBaseUrl(baseUrl);
-    
+
     const apiUrl = `${cleanBaseUrl}/api/v1/workflows`;
-    
+
     console.log("Kết nối thử tới:", apiUrl);
-    
+
     // Thực hiện yêu cầu GET xem có bao nhiêu workflow để kiểm tra kết nối
     const response = await axios.get(apiUrl, {
       headers: {
@@ -50,16 +47,16 @@ router.post("/api/n8n/test", async (req, res) => {
       },
       timeout: 10000
     });
-    
+
     console.log("Test successful, response status:", response.status);
-    
+
     res.json({
       success: true,
       message: 'Connection successful',
       workflowCount: response.data?.data?.length || 0,
       n8nVersion: response.headers['x-n8n-version'] || 'unknown'
     });
-    
+
   } catch (error) {
     console.error('N8N Test Error:', error.message);
     console.error('Error details:', {
@@ -67,12 +64,12 @@ router.post("/api/n8n/test", async (req, res) => {
       status: error.response?.status,
       data: error.response?.data
     });
-    
+
     let errorResponse = {
       success: false,
       error: 'Connection test failed'
     };
-    
+
     if (error.response) {
       // n8n returned an error response
       errorResponse.error = `n8n returned ${error.response.status}: ${error.response.data?.message || error.response.statusText}`;
@@ -101,10 +98,10 @@ router.post("/api/n8n/test", async (req, res) => {
 router.post("/api/n8n/workflows", async (req, res) => {
   try {
     const { apiKey, baseUrl, workflowData } = req.body;
-    
-    console.log("Create workflow request:", { 
-      baseUrl, 
-      hasApiKey: !!apiKey, 
+
+    console.log("Create workflow request:", {
+      baseUrl,
+      hasApiKey: !!apiKey,
       hasWorkflowData: !!workflowData,
       workflowName: workflowData?.name
     });
@@ -112,9 +109,9 @@ router.post("/api/n8n/workflows", async (req, res) => {
     //console.log("Raw workflowData:", JSON.stringify(workflowData, null, 2)); log ra toàn bộ workflow nhưng xóa đi cho đỡ dài
     // Kiểm tra các trường bắt buộc
     if (!apiKey || !baseUrl || !workflowData) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: "Thiếu trường cần thiết: apiKey, baseUrl, workflowData" 
+        error: "Thiếu trường cần thiết: apiKey, baseUrl, workflowData"
       });
     }
     //Nạp lên baseUrl
@@ -160,16 +157,18 @@ router.post("/api/n8n/workflows", async (req, res) => {
       maxContentLength: Infinity,
       maxBodyLength: Infinity
     });
-    
+
     const createdWorkflow = response.data;
     console.log("Workflow created successfully:", createdWorkflow?.id);
-
-    res.json({
+    let newUrl = `${baseUrl}/workflow/${createdWorkflow.id}`
+    res.status(201).json({
       success: true,
       data: createdWorkflow,
-      message: 'Workflow created successfully'
+      message: 'Workflow created successfully',
+      url: newUrl,
+      id: createdWorkflow.id,
+      name: createdWorkflow.name
     });
-
   } catch (error) {
     console.error('N8N API Error:', error.message);
     console.error('Error details:', {
@@ -207,5 +206,80 @@ router.post("/api/n8n/workflows", async (req, res) => {
     }
   }
 });
+//Kích hoạt workflow
+router.post("/api/n8n/workflows/activate", async (req, res) => {
+  try {
+    const { apiKey, baseUrl, workflowId } = req.body;
+    const activate = await fetch(`${sanitizeBaseUrl(baseUrl)}/api/v1/workflows/${workflowId}/activate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-N8N-API-KEY": apiKey
+      }
+    });
+    res.json({ success: true, message: 'Workflow kích hoạt thành công' });
+  } catch (error) {
+    console.error('Error activating workflow:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to activate workflow'
+    });
+  }
+});
 
+// async function activateWorkflow(apiKey, baseUrl, workflowId) {
+//   try {
+//     const cleanBaseUrl = sanitizeBaseUrl(baseUrl);
+//     const apiUrl = `${cleanBaseUrl}/api/v1/workflows/${workflowId}/activate`;
+//     const response = await axios.post(apiUrl, {}, {
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'X-N8N-API-KEY': apiKey
+//       },
+//       timeout: 30000,
+//       maxContentLength: Infinity,
+//       maxBodyLength: Infinity
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error activating workflow:', error.message);
+//     throw error;
+//   }
+// }
+
+router.post('/api/n8n-workflow-upload', async (req, res) => {
+  try {
+
+    const { workflowData, apiKey, baseUrl } = req.body;
+    const cleanBaseUrl = sanitizeBaseUrl(baseUrl);
+    console.log('Nhận được:', { baseUrl, apiKey, workflowData });
+    //Tạo apiUrl
+    const apiUrl = `${cleanBaseUrl}/api/v1/workflows`;
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'X-N8N-API-KEY': apiKey
+      },
+      body: JSON.stringify(workflowData)
+    });
+    console.log("Upload response status:", res);
+    const createdWorkflow = await res.json();
+    console.log("Workflow created successfully:", createdWorkflow?.id);
+    let newUrl = `${baseUrl}/workflow/${createdWorkflow.id}`
+    res.status(201).json({
+      success: true,
+      data: createdWorkflow,
+      message: 'Workflow created successfully',
+      url: newUrl,
+      id: createdWorkflow.id,
+      name: createdWorkflow.name
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload workflow'
+    });
+  }
+});
 module.exports = router;

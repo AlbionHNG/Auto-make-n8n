@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập</title>
+    <style>
+        /* Reset CSS cơ bản - loại bỏ margin/padding mặc định của trình duyệt */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            /* Đảm bảo padding không làm tăng kích thước phần tử */
+        }
+
+        /* Styling cho body - căn giữa form và tạo background đẹp */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, white 0%, black 100%);
+            /* Gradient tím */
+            min-height: 100vh;
+            /* Chiều cao tối thiểu bằng màn hình */
+            display: flex;
+            justify-content: center;
+            /* Căn giữa theo chiều ngang */
+            align-items: center;
+            /* Căn giữa theo chiều dọc */
+            padding: 20px;
+        }
+
+        /* Container chính chứa form đăng nhập */
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            /* Bo góc mềm mại */
+            box-shadow: 0 20px 90px rgba(0, 0, 0, 0.3);
+            /* Đổ bóng để tạo độ nổi */
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            /* Giới hạn độ rộng tối đa */
+            animation: slideIn 0.5s ease-out;
+            /* Hiệu ứng trượt vào khi load */
+        }
+
+        /* Keyframe cho animation trượt vào */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+                /* Bắt đầu từ trên cao 30px */
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                /* Về vị trí ban đầu */
+            }
+        }
+
+        /* Tiêu đề trang đăng nhập */
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Icon trang trí cho tiêu đề */
+        .login-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            /* Tạo hình tròn */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+            font-size: 30px;
+        }
+
+        /* Nhóm input - chứa label và input */
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+            /* Để đặt icon bên trong input */
+        }
+
+        /* Icon bên trong input field */
+        .input-group .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 13px;
+            /* Căn chỉnh với input */
+            color: #999;
+            font-size: 18px;
+            pointer-events: none;
+            /* Không chặn click vào input */
+        }
+
+        /* Styling cho input fields */
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            /* Padding trái nhiều hơn cho icon */
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            /* Hiệu ứng chuyển mượt */
+            outline: none;
+            /* Bỏ viền mặc định khi focus */
+        }
+
+        /* Hiệu ứng khi focus vào input */
+        .input-group input:focus {
+            border-color: #667eea;
+            /* Đổi màu viền */
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            /* Thêm shadow nhẹ */
+        }
+
+        /* Placeholder text màu nhạt hơn */
+        .input-group input::placeholder {
+            color: #bbb;
+        }
+
+        /* Nút đăng nhập */
+        #loginBtn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        /* Hiệu ứng hover cho nút */
+        #loginBtn:hover {
+            transform: translateY(-2px);
+            /* Nâng lên 2px */
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            /* Đổ bóng mạnh hơn */
+        }
+
+        /* Hiệu ứng khi click nút */
+        #loginBtn:active {
+            transform: translateY(0);
+            /* Trở về vị trí ban đầu */
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #667eea;
+            cursor: pointer;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+
+        /* Phần chứa link đăng ký */
+        .register-link {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #eee;
+            /* Đường kẻ phân cách */
+            color: #666;
+            font-size: 14px;
+        }
+
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .register-link a:hover {
+            color: #764ba2;
+            /* Đổi màu khi hover */
+            text-decoration: underline;
+        }
+
+        /* Responsive cho mobile - màn hình nhỏ hơn 480px */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            .login-header h1 {
+                font-size: 24px;
+            }
+
+            .login-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
+        }
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .forgot-password {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Container chính -->
+    <div class="login-container">
+        <!-- Header với icon -->
+        <div class="login-header">
+            <div class="login-icon">🔐</div>
+            <h1>Đăng Nhập</h1>
+            <p>Chào mừng bạn quay trở lại!</p>
+        </div>
+
+        <!-- Input Email với icon -->
+        <div class="input-group">
+            <span class="input-icon">📧</span>
+            <input type="text" id="email" placeholder="Nhập email của bạn">
+        </div>
+
+        <!-- Input Mật khẩu với icon -->
+        <div class="input-group">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="password" placeholder="Nhập mật khẩu">
+        </div>
+
+        <!-- Nút đăng nhập -->
+        <button id="loginBtn">Đăng Nhập</button>
+        <div class="remember-forgot">
+            <label class="remember-me">
+                <input type="checkbox" id="rememberMe">
+                <span>Ghi nhớ đăng nhập</span>
+            </label>
+            <a href="forgot.html" class="forgot-password">Quên mật khẩu?</a>
+        </div>
+        <!-- Link đăng ký -->
+        <p class="register-link">
+            Chưa có tài khoản? <a href="register.html">Đăng ký</a>
+        </p>
+
+    </div>
+
+    <!-- Script xử lý đăng nhập -->
+    <script src="./login.js" defer></script>
+</body>
+
+</html>
